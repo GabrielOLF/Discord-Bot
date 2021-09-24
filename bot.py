@@ -11,16 +11,13 @@ import json
 import random
 import time
 import asyncpg
-import musical
 from asyncio import TimeoutError
 from keep_alive import keep_alive
 from token import token
 
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
-cogs = [musical]
-for i in range(len(cogs)):
-  cogs[i].setup(bot)
+
 sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza']
 nilismo = ["A filosofia é o exílio voluntário entre montanhas geladas.", "Nós, homens do conhecimento, não nos conhecemos; de nós mesmo somos desconhecidos.", "Não me roube a solidão sem antes me oferecer verdadeira companhia.", "O amor é o estado no qual os homens têm mais probabilidades de ver as coisas tal como elas não são.", "Como são múltiplas as ocasiões para o mal-entendido e para a ruptura hostil!", "Deus está morto. Viva Perigosamente. Qual o melhor remédio? - Vitória!", "A diferença fundamental entre as duas religiões da decadência: o budismo não promete, mas assegura. O cristianismo promete tudo, mas não cumpre nada.", "Quando se coloca o centro de gravidade da vida não na vida mas no além - no nada -, tira-se da vida o seu centro de gravidade.", "Para ler o Novo Testamento é conveniente calçar luvas. Diante de tanta sujeira, tal atitude é necessária.",
            "O cristianismo foi, até o momento, a maior desgraça da humanidade, por ter desprezado o Corpo.", "E aqueles que foram vistos dançando foram julgados insanos por aqueles que não podiam escutar a música.", "A moralidade é o instinto do rebanho no indivíduo.", "O idealista é incorrigível: se é expulso do seu céu, faz um ideal do seu inferno.", "Em qualquer lugar onde encontro uma criatura viva, encontro desejo de poder.", "Um político divide os seres humanos em duas classes: instrumentos e inimigos.", "Quanto mais me elevo, menor eu pareço aos olhos de quem não sabe voar. ", "Torna-te quem tu és!", "Aquele que luta com monstros deve acautelar-se para não tornar-se também um monstro. Quando se olha muito tempo para um abismo, o abismo olha para você.", "A alma nobre tem reverência por si mesma.", "Não existem fenômenos morais, mas apenas uma interpretação moral dos fenômenos."]
