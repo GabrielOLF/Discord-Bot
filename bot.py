@@ -14,6 +14,7 @@ import asyncpg
 import musical
 from asyncio import TimeoutError
 from keep_alive import keep_alive
+from token import token
 
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
@@ -686,4 +687,4 @@ async def on_message(message):
                 await message.reply(resposta, mention_author=False)
                 break
             
-bot.run('ODc5NDI5Njc3NTI4MjUyNDQ2.YSPmtg.T-IMrn5ShbArZWy1WyDgt8wVbk4')
+bot.run(token)
