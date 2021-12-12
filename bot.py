@@ -19,13 +19,11 @@ import sqlite3
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
 
-sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza']
+sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza', 'eu não consigo', 'sou burro', 'meu deus']
 nilismo = ["A filosofia é o exílio voluntário entre montanhas geladas.", "Nós, homens do conhecimento, não nos conhecemos; de nós mesmo somos desconhecidos.", "Não me roube a solidão sem antes me oferecer verdadeira companhia.", "O amor é o estado no qual os homens têm mais probabilidades de ver as coisas tal como elas não são.", "Como são múltiplas as ocasiões para o mal-entendido e para a ruptura hostil!", "Deus está morto. Viva Perigosamente. Qual o melhor remédio? - Vitória!", "A diferença fundamental entre as duas religiões da decadência: o budismo não promete, mas assegura. O cristianismo promete tudo, mas não cumpre nada.", "Quando se coloca o centro de gravidade da vida não na vida mas no além - no nada -, tira-se da vida o seu centro de gravidade.", "Para ler o Novo Testamento é conveniente calçar luvas. Diante de tanta sujeira, tal atitude é necessária."]
 
 @bot.event
 async def on_ready():
-    conn = sqlite3.connect('users.db')
-    cur = conn.cursor()
     DiscordComponents(bot)
     print(f'{bot.user} ta vivo caraio.')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='música erudita'))
@@ -36,13 +34,134 @@ async def on_command_error(ctx, error):
       else:
         await ctx.send('Este comando não existe. Digite !comandos para conhecer os meus comandos.')
     return
+"""----------Consertar essa porra depois
 @bot.command()
-async def ricos(ctx):
+async def anime(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  await ctx.reply('De qual anime/manga você deseja saber a nota?')
+  resp = await bot.wait_for('message', check=check)
+  tag = resp.content
+  if ' ' in tag:
+    tag = tag.replace(' ', '%20')
+    tag_search = tag.replace('%20', ' ')
+  else:
+    tag = tag
+    tag_search = tag
+  url = f'https://myanimelist.net/search/all?q={tag}&cat=all'
+  result = requests.get(url).text
+  doc = bs(result, 'html.parser')
+  try:
+    div = doc.find(class_='wrapper')
+    try:
+      name_search = div.find(class_='information di-tc va-t pl8')
+      name = str(name_search).split('>')[2].split('<')[0]
+    except:
+      name = tag_search
+    real_div = div.find(class_='list di-t w100')
+    image_search = real_div.find(class_='lazyload')
+    image_link = str(image_search).split('src=')[1].split('"')[1]
+    try:
+      score_search = real_div.find(class_='pt4 fs10 lh14 fn-grey4')
+      score = str(score_search).split('/>')[1].split('<')[0].replace('\n', '').split('Scored')[1].replace(' ', '')
+    except:
+      try:
+        score_search = real_div.find(class_='pt8 fs10 lh14 fn-grey4')
+        score = str(score_search).split('/>')[1].split('<')[0].replace('\n', '').split('Scored')[1].replace(' ', '')
+      except:
+        await ctx.send(f'Não consegui encontrar ``{tag_search}``.')
+  except:
+    await ctx.send(f'Não consegui encontrar ``{tag_search}``.')
+  embedA = discord.Embed(
+            title=f"Nota de {name}", description=f'MAL: **{score}**', color=0x00ffce)
+  embedA.set_thumbnail(url=f"{image_link}")
+  await ctx.send(embed=embedA)
+"""
+@bot.command()
+async def palavras(ctx):
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  cur.execute('SELECT id, money FROM userid ORDER BY money DESC')
+  cur.execute('SELECT palavras FROM words')
+  words = ''
+  for row in cur:
+    words = words + row[0] + ', '
+  words = words[:-1]
+  words = words[:-1]
+  embedG = discord.Embed(
+        title="Palavras do jogo **!forca**", description=f'**{words}**', color=0x00ff00)
+  await ctx.send(embed=embedG)
+@bot.command()
+async def adicionar(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  await ctx.send('Que palavra deseja adicionar a ``!forca``?')
+  resp = await bot.wait_for('message', check=check)
+  palavra = str(resp.content)
+  palavra = palavra.lower()
+  cur.execute('SELECT palavras from words')
+  words = ''
+  for row in cur:
+    words = words + row[0] + ','
+  if palavra in words.lower():
+    await ctx.send(f'A palavra {palavra} já está inserida no banco de dados, tente outra.')
+  else:
+    try:
+      cur.execute('INSERT INTO words (palavras) VALUES (?)',(palavra, ))
+      conn.commit()
+      await ctx.send(f'A palavra {palavra} foi adicionada ao banco de dados com sucesso!')
+    except:
+      await ctx.send(f'Não consegui adicionar {palavra} ao banco de dados.')
+
+  cur.execute('SELECT palavras FROM words')
+  words = ''
+  for row in cur:
+    words = words + row[0] + ', '
+  words = words[:-1]
+  words = words[:-1]
+  embedG = discord.Embed(
+        title="Palavras do jogo ``!forca``", description=f'``{words}``', color=0x00ff00)
+  await ctx.send(embed=embedG)
+@bot.command()
+async def remover(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  cur.execute('SELECT palavras FROM words')
+  words = ''
+  for row in cur:
+    words = words + row[0] + ', '
+  words = words[:-1]
+  words = words[:-1]
+  embedG = discord.Embed(
+        title="Palavras do jogo ``!forca``", description=f'``{words}``', color=0x00ff00)
+  await ctx.send(embed=embedG)
+  await ctx.send('Que palavra você deseja remover?')
+  resp = await bot.wait_for('message', check=check)
+  palavra = resp.content
+  palavra = palavra.lower()
+  words = words.lower()
+  if palavra in words:
+    try:
+      cur.execute('DELETE FROM words WHERE palavras = ?', (palavra, ))
+      conn.commit()
+      await ctx.send(f'{palavra} foi removida do banco com sucesso!')
+    except:
+      await ctx.send(f'Não consegui remover {palavra} do banco.')
+  else:
+    await ctx.send(f'Não foi possível retirar a palavra {palavra} pois ela não está inserida no banco.')
+@bot.command()
+async def ricos(ctx):
+  # Conecta ao banco de dados
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  # Seleciona as linhas id e money da tabela userid ordenada pelo dinheiro
+  cur.execute('SELECT id, money FROM userid ORDER BY money DESC LIMIT 5')
   usuarios = ''
   num = 1
+  # Retorna cada linha do banco selecionadas anteriormente
   for row in cur:
     if num == 1:
       usuarios = usuarios + f":first_place: **{row[0]}**" + ": " + f"``{row[1]}``" + "\n"
@@ -53,13 +172,28 @@ async def ricos(ctx):
     elif num != 1 and num != 2 and num != 3:
       usuarios = usuarios + f":small_blue_diamond: **{row[0]}**" + ": " + f"``{row[1]}``" + "\n"
     num += 1
+  embedG = discord.Embed(
+        title="Ricos do servidor", description=f'{usuarios}', color=0x00ff00)
+  await ctx.send(embed=embedG)
+# GATINHO
 @bot.command()
-async def rankpontos(ctx):
+async def gatinho(ctx):
+  url = 'http://random.cat/view'
+  result = requests.get(url).text
+  doc = bs(result, 'html.parser')
+  find_photo = str(doc).split('src=')[1].split('"')[1]
+  await ctx.send(find_photo)
+# RANK PONTOS
+@bot.command()
+async def rank(ctx):
+  # Se conecta ao banco de dados
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  cur.execute('SELECT * FROM userid ORDER BY points DESC')
+  # Seleciona os ids e pontos da tabela userid ordenada pelos pontos
+  cur.execute('SELECT id, points FROM userid ORDER BY points DESC LIMIT 5')
   usuarios = ''
   num = 1
+  # Retorna cada linha selecionada anteriormente 
   for row in cur:
     if num == 1:
       usuarios = usuarios + f":first_place: **{row[0]}**" + ": " + f"``{row[1]}``" + "\n"
@@ -74,45 +208,104 @@ async def rankpontos(ctx):
   embedG = discord.Embed(
         title="Ranking de pontos", description=f'{usuarios}', color=0x00ff00)
   await ctx.send(embed=embedG)
- 
-  
-  
+
 @bot.command()
-async def database(ctx):
+async def apostar(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  cur.execute(f'SELECT id FROM userid WHERE id="{user_id}"')
-  if cur.fetchone():
-    await ctx.send('Você está no banco de dados do bot!')
+  cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
+  for row in cur:
+    money = int(row[1])
+  if money > 0:
+    await ctx.reply('Quanto você quer apostar? ')
   else:
-    await ctx.send('Você não está no banco de dados.')
+    await ctx.reply('Você não tem nada pra apostar.')
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  response = await bot.wait_for('message', check=check)
+  apostado = int(response.content)
+  aposta = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+  sorte = random.choice(aposta)
+  user_id = str(ctx.author).split('#')[0]
  
-#SIGNIFICADO SCRAPING
+  money_won =  int(2 * apostado)
+  money_won2 = int(apostado + 250)
+  for row in cur:
+    money = int(row[1])
+  if money < apostado:
+    await ctx.reply('Você não tem tudo isso.')
+  elif apostado == 0:
+    await ctx.reply('Sério?')
+  else:
+    if sorte == 'a':
+        cur.execute(f'UPDATE userid SET money = money + {money_won} WHERE id= "{user_id}"')
+        conn.commit()
+        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
+        for row in cur:
+          money = int(row[1])
+        await ctx.reply(f'Você ganhou o ``dobro`` :money_mouth:. Agora você tem ``{money}``!')
+    elif sorte == 'b' or sorte == 'c':
+        cur.execute(f'UPDATE userid SET money = money + {money_won2} WHERE id= "{user_id}"')
+        conn.commit()
+        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
+        for row in cur:
+          money = int(row[1])
+        await ctx.reply(f'Você ganhou, ``{user_id}``! Agora você tem ``{money}``.')
+    else:
+        cur.execute(f'UPDATE userid SET money = money - {apostado} WHERE id= "{user_id}"')
+        conn.commit()
+        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
+        for row in cur:
+          money = int(row[1])
+        await ctx.reply(f'Você perdeu, ``{user_id}``! Agora você tem ``{money}``.')
+# DIRSON
+@bot.command()
+async def dirso(ctx):
+  await ctx.send('https://cdn.discordapp.com/attachments/840110683785658369/905443717626884116/20211103_100824.jpg')
+# BANCO DE IDS
+@bot.command()
+async def database(ctx):
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  cur.execute(f'SELECT id FROM userid ORDER BY id DESC')
+  usuarios = ''
+  for row in cur:
+    usuarios = usuarios + f'**{row[0]}**' + '\n'
+  await ctx.send(f'Usuarios que estão inseridos no banco de dados:\n{usuarios}')
+"""----------Arrumar essa merda depois
+# SIGNIFICADO SCRAPING
 @bot.command()
 async def significado(ctx):
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-  await ctx.send('Qual palavra você quer saber o significado?')
+  await ctx.reply('De qual palavra você deseja saber o significado?')
   response = await bot.wait_for('message', check=check)
   tag = response.content
+  if ' ' in tag:
+    tag = tag.replace(' ', '+')
+    tag_search = tag.replace('+', ' ')
+  else:
+    tag = tag
+    tag_search = tag
   try:
-    url = f'https://www.significados.com.br/?s={tag}'
-    result = requests.get(url).text
-    doc = bs(result, 'html.parser')
-    div = doc.find(class_='row')
-    real_div = div.find(class_='col-lg-8 mt20')
-    description_search = real_div.find(class_='description')
-    description_found = str(description_search).replace('<br/', '').replace('>','').replace('</','').replace('<p class="description" ','').split('"')[2]
-    if '.p' in description_found:
-      description_found = description_found.replace('.p', '')
-    embedVar = discord.Embed(
-                            title=f"Significado de {tag}", description=(f'{description_found}'),color=0x00ff00)
-    await ctx.send(embed=embedVar)
+      url = f'https://www.significados.com.br/?s={tag}'
+      result = requests.get(url).text
+      doc = bs(result, 'html.parser')
+      div = doc.find(class_='row')
+      real_div = div.find(class_='col-lg-8 mt20')
+      description_search = real_div.find(class_='description')
+      description_found = str(description_search).replace('<br/', '').replace('>','').replace('</','').replace('<p class="description" ','').split('"')[2]
+      if '<em' in description_found:
+        description_found = description_found.replace('<em', '')
+      if 'em.p' in description_found:
+        description_found = description_found.replace('em.p', '')
+      embedSig = discord.Embed(title=f"Significado de {tag_search}", description=f"{description_found}",color=0x121274)
+      await ctx.send(embed=embedSig)
   except:
-    await ctx.send(f'Não consegui encontrar {tag}.')
-  
-  
+      await ctx.reply(f'Não consegui encontrar {tag_search}.')
+"""
+
 # RANDOM DOG
 @bot.command()
 async def doguinho(ctx):
@@ -186,6 +379,10 @@ async def cinema(ctx):
           except:
             await ctx.send(f'Não consegui encontrar {movie}. Tente escrever o nome de outra forma.')
     name = str(name_found).split('>')[2].split('<')[0]
+    nome_nota = rating_div.find_all(class_='rating-item-content')
+    nome_nota1 = str(nome_nota).split('>')[2].split('<')[0].replace(' ', '')
+    nome_nota2= str(nome_nota).split('>')[22].split('<')[0].replace(' ', '')
+    nome_nota3 = str(nome_nota).split('>')[42].split('<')[0].replace(' ', '')
     try:
       rating_imprensa = str(rating_stars).split('>')[1].split('<')[0]
       rating_cinema = str(rating_stars).split('<')[5].split('>')[1]
@@ -197,10 +394,11 @@ async def cinema(ctx):
     else:
       rating_users = str(rating_stars).split('<')[3].split('>')[1]
     embedVar = discord.Embed(
-                              title=f"{name}", color=0x00ff00)
-    embedVar.add_field(name='Nota da Crítica', value=f"``{rating_imprensa}``")
-    embedVar.add_field(name='Nota dos Usuários', value=f"``{rating_users}``")
-    embedVar.add_field(name='Nota do Site', value=f"``{rating_cinema}``")
+                              title=f"{name}", color=0x06adc4)
+    embedVar.add_field(name=nome_nota1, value=f"**{rating_imprensa}**")
+    embedVar.add_field(name=nome_nota2, value=f"**{rating_users}**")
+    if str(nome_nota3) != 'Meusamigos':
+      embedVar.add_field(name=nome_nota3, value=f"**{rating_cinema}**")
     embedVar.set_thumbnail(url=f"{image_found}")
     await ctx.send(embed=embedVar)
   except:
@@ -219,41 +417,46 @@ async def pdt(ctx):
     vitoria = discord.Embed(title=f'{ctx.author.display_name} você ganhou!',
                             description=f'O bot escolheu {comp}.', color=0x00ff00)
     derrota = discord.Embed(title=f'{ctx.author.display_name} você perdeu!',
-                            description=f'O bot escolheu {comp}.', color=0x00ff00)
+                            description=f'O bot escolheu {comp}.', color=0xc50b0b)
     fora = discord.Embed(
-        title="Você não clicou a tempo, você está fora.", color=0x00ff00)
+        title="Você não clicou a tempo, você está fora.", color=0xc50b0b)
     m = await ctx.send(
         embed=ainda,
-        components=[[Button(style=1, label="Pedra", custom_id="button1"), Button(
-            style=1, label="Papel", custom_id='button2'), Button(style=1, label="Tesoura", custom_id='button3')]]
+        components=[[Button(style=1, label="pedra"), Button(style=1, label="papel"), Button(style=1, label="tesoura")]]
     )
     try:
         res = await bot.wait_for('button_click', check=check, timeout=10.0)
         player = res.component.label
         if player == comp:
             await m.edit(embed=empate, components=[])
-        if player == "Pedra" and comp == "papel":
+        if player == "pedra" and comp == "papel":
             await m.edit(embed=derrota, components=[])
-        if player == "Pedra" and comp == "tesoura":
+        if player == "pedra" and comp == "tesoura":
             pontos = 1
             conn = sqlite3.connect('users.db')
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
             await m.edit(embed=vitoria, components=[])
-            await ctx.send('Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação no ranking!')
-        if player == "Papel" and comp == "tesoura":
+        if player == "papel" and comp == "tesoura":
             await m.edit(embed=derrota, components=[])
-        if player == "Tesoura" and comp == "pedra":
-            await m.edit(embed=derrota, components=[])
-        if player == "Tesoura" and comp == "papel":
+        if player == 'papel' and comp == 'pedra':
             pontos = 1
             conn = sqlite3.connect('users.db')
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
             await m.edit(embed=vitoria, components=[])
-            await ctx.send('Você ganhou 1 ponto por isso! De !rank para saber sua colocação no ranking!')
+        if player == "tesoura" and comp == "pedra":
+            await m.edit(embed=derrota, components=[])
+        if player == "tesoura" and comp == "papel":
+            pontos = 1
+            conn = sqlite3.connect('users.db')
+            cur = conn.cursor()
+            cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
+            conn.commit()
+            await m.edit(embed=vitoria, components=[])
+            
     except TimeoutError:
         await m.edit(embed=fora, components=[])
 # MM
@@ -263,16 +466,16 @@ async def mm(ctx):
     def check(res):
         return ctx.author == res.user and res.channel == ctx.channel
     user_id = str(ctx.author).split('#')[0]
-    num = random.choice(range(10, 100))
-    num_v = random.choice(range(1, 100))
+    num = random.choice(range(10, 20))
+    num_v = random.choice(range(1, 20))
     al = discord.Embed(title="Maior ou Menor",
                        description=f'O número aleatório é igual ou está perto de {num}', color=0x00ff00)
     fora = discord.Embed(
-        title="Você não escolheu a tempo.", color=0x00ff00)
+        title="Você não escolheu a tempo.", color=0xc50b0b)
     vitoria = discord.Embed(title=f'{ctx.author.display_name} você ganhou!',
                             description=f'O bot escolheu {num_v}', color=0x00ff00)
     derrota = discord.Embed(title=f'{ctx.author.display_name} você perdeu!',
-                            description=f'O bot escolheu {num_v}', color=0x00ff00)
+                            description=f'O bot escolheu {num_v}', color=0xc50b0b)
     m = await ctx.send(
         embed=al,
         components=[[Button(style=1, label='Maior', custom_id="button1"), Button(
@@ -289,7 +492,7 @@ async def mm(ctx):
                 cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
                 conn.commit()
                 await m.edit(embed=vitoria, components=[])
-                await ctx.send('Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação!')
+                await ctx.send('+1 ponto')
             elif num_v < num:
                 await m.edit(embed=derrota, components=[])
             elif num_v == num:
@@ -306,7 +509,7 @@ async def mm(ctx):
                 cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
                 conn.commit()
                 await m.edit(embed=vitoria, components=[])
-                await ctx.send('Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação no ranking!')
+                await ctx.send('+1 ponto')
         if player == 'Menor':
             if num_v > num:
                 await m.edit(embed=derrota, components=[])
@@ -317,7 +520,7 @@ async def mm(ctx):
                 cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
                 conn.commit()
                 await m.edit(embed=vitoria, components=[])
-                await ctx.send('Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação no ranking!')
+                await ctx.send('+1 ponto')
             elif num_v == num:
                 await m.edit(embed=derrota, components=[])
     except TimeoutError:
@@ -328,7 +531,7 @@ async def mm(ctx):
 async def loteria(ctx):
     def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-    await ctx.channel.send(ctx.author.mention + ' escolha 6 números de 1 a 100:')
+    await ctx.reply('Escolha 6 números de 1 a 100')
     resp = await bot.wait_for('message',check=check)
     answer = resp.content.split()
     answer1 = list(map(int, answer))
@@ -344,10 +547,14 @@ async def loteria(ctx):
                 if apostada == sorteada:
                     acertadas += 1
                     break
-        embedVar = discord.Embed(title="Resultado", color=0x00ff00)
-        embedVar.add_field(name="Apostadas", value=str(answer1), inline=False)
-        embedVar.add_field(name="Sorteadas", value=str(sort), inline=False)
-        embedVar.add_field(name='Número de acertos', value=str(acertadas))
+        num_resposta = str(answer1).replace('[', '').replace(']','')
+        num_sorteadas = str(sort).replace('[', '').replace(']','')
+        num_acertos = str(acertadas).replace('[', '').replace(']', '')
+
+        embedVar = discord.Embed(title="Resultado", color=0xff6500)
+        embedVar.add_field(name="Apostadas", value=(num_resposta), inline=False)
+        embedVar.add_field(name="Sorteadas", value=(num_sorteadas), inline=False)
+        embedVar.add_field(name='Número de acertos', value=(num_acertos))
         await ctx.reply(embed=embedVar)
 # DADOS
 
@@ -356,11 +563,6 @@ async def dados(ctx):
     def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
     gold = 2000
-    embedVar = discord.Embed(title="Jogo dos Dados", description="Dois dados serão rodados. Se um dos dados der 1, você ganha 2x o valor que apostou. Se ambos os dados derem 1, você ganha 10x o valor que apostou. Se nenhum dos dados derem 1, você perde tudo que apostou.')", color=0x00ff00)
-    embedVar.add_field(
-        name="Situação", value=f"Você tem ``{gold}`` bonoros", inline=False)
-    ##embedVar.add_field(name="Field2", value="hi2", inline=False)
-    await ctx.channel.send(embed=embedVar)
     while gold >= 0:
         dado_1 = random.choice(range(1, 7))
         dado_2 = random.choice(range(1, 7))
@@ -456,9 +658,6 @@ async def op(ctx):
         return ctx.author == res.author and res.channel == ctx.channel
     y = ['multiplicação', 'subtração', 'adição']
     op = random.choice(y)
-    embedVar = discord.Embed(title="Joguinho de operações matemáticas",
-                             description='O bot escolherá uma operação aleatória entre números aleatórios. Responda corretamente e ganhe ||nada||', color=0x00ff00)
-    await ctx.channel.send(embed=embedVar)
     time.sleep(1)
     if op == 'multiplicação':
         num_al1 = random.choice(range(1, 12))
@@ -507,8 +706,22 @@ async def op(ctx):
 async def forca(ctx):
     def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-    words_package = ['RINOCERONTE','ELEFANTE','GIRAFA','CROCODILO','PANDA','RATO','MACACO','VINIBOYOLA','DORI','DANILO','PANDA']
-    word = random.choice(words_package)
+    conn = sqlite3.connect('users.db')
+    cur = conn.cursor()
+    cur.execute('SELECT palavras FROM words')
+    palavra_lista = ''
+    palavra_lista1 = []
+    for row in cur:
+      palavra_lista = palavra_lista + row[0] + ' '
+    palavra_lista = palavra_lista.split(' ')
+    for palavra in palavra_lista:
+      palavra_lista1.append(palavra)
+    word = random.choice(palavra_lista1)
+    if word == '':
+      while word == '':
+        word = random.choice(palavra_lista1)
+        if word != '':
+          break
     word = word.lower()
     digitadas = []
     chances = 6
@@ -521,8 +734,12 @@ async def forca(ctx):
         tentativa = str(resp.content)
         letra = tentativa.lower()
         if len(letra) > 1:
-            await ctx.reply('Apenas uma letra.')
-            continue
+            if letra == 'dica':
+              await ctx.send(f'A palavra começa com ``{word[0]}`` e termina com ``{word[-1]}``')
+              continue
+            else:
+              await ctx.send('Apenas uma letra.')
+              continue
         digitadas.append(letra)
         tempo_secret = ''
         for letra_secreta in word:
@@ -556,11 +773,19 @@ async def forca(ctx):
 async def cores(ctx):
     def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-    palavras = ['``abacate``', '``feijoada``',
-                '``viniboyola``', '``celular``', '``liquidificador``']
-    embedVar = discord.Embed(title="Joguinho das cores",
-                             description='O bot colocará uma cor aleatória do lado de uma palavra aleatória. Responda escrevendo a sua cor e ganhe ||nada||', color=0x00ff00)
-    await ctx.reply(embed=embedVar)
+    conn = sqlite3.connect('users.db')
+    cur = conn.cursor()
+    cur.execute('SELECT palavras FROM words')
+    """palavras = ['``abacate``', '``feijoada``',
+                '``viniboyola``', '``celular``', '``liquidificador``']"""
+    palavra_lista = ''
+    palavra_lista1 = []
+    for row in cur:
+      palavra_lista = palavra_lista + row[0] + ' '
+    palavra_lista = palavra_lista.split(' ')
+    for palavra in palavra_lista:
+      palavra_lista1.append(palavra)
+    palavras = palavra_lista1
     cor = [':orange_circle:', ':red_circle:',
            ':blue_circle:', ':yellow_circle:', ':green_circle:']
     sorteados = random.sample(cor, len(cor))
@@ -571,14 +796,22 @@ async def cores(ctx):
     palavra1 = sorteados1[1]
     palavra2 = sorteados1[2]
     palavra3 = sorteados1[3]
+    if palavra1 == '' or palavra2 == '' or palavra3 == '':
+      if palavra1 == '':
+        palavra1 = sorteados1[4]
+      elif palavra2 == '':
+        palavra2 = sorteados1[4]
+      elif palavra3 == '':
+        palavra3 = sorteados1[4]
+      
     lista = [palavra1, palavra2, palavra3]
     palavra = random.choice(lista)
     embedG = discord.Embed(
           title="Atenção:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
     msg = await ctx.send(embed=embedG)
     embedE = discord.Embed(
-        description=f'Qual era a cor da palavra {palavra}?', color=0x00ff00)
-    time.sleep(8)
+        description=f'Qual era a cor da palavra {palavra}?', color=0x00b2ff)
+    time.sleep(2)
     await msg.edit(embed=embedE)
     res = await bot.wait_for('message',check=check)
     tentativa = str(res.content)
@@ -590,14 +823,14 @@ async def cores(ctx):
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
-            await ctx.reply('Você acertou! Você ganhou 1 ponto por isso. Dê !rank para saber sua colococação! :partying_face:')
+            await ctx.reply('Você acertou! :partying_face:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00b2ff)
             await msg.edit(embed=embedF)
         else:
             await ctx.reply('Você errou! :rofl:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
             await msg.edit(embed=embedF)
     elif tentativa == 'Azul' or tentativa == 'azul':
         if cor1 == ':blue_circle:' and palavra == palavra1 \
@@ -608,14 +841,14 @@ async def cores(ctx):
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
-            await ctx.reply('Você acertou! Você ganhou 1 pontos por acertar! Dê !rank para saber sua colocação! :partying_face:')
+            await ctx.reply('Você acertou! :partying_face:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00b2ff)
             await msg.edit(embed=embedF)
         else:
             await ctx.reply('Você errou! :rofl:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
             await msg.edit(embed=embedF)
     elif tentativa == 'Vermelho' or tentativa == 'vermelho':
         if cor1 == ':red_circle:' and palavra == palavra1 \
@@ -626,14 +859,14 @@ async def cores(ctx):
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
-            await ctx.reply('Você acertou! Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação no ranking de pontos! :partying_face:')
+            await ctx.reply('Você acertou! :partying_face:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00b2ff)
             await msg.edit(embed=embedF)
         else:
             await ctx.reply('Você errou! :rofl:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
             await msg.edit(embed=embedF)
     elif tentativa == 'Verde' or tentativa == 'verde':
         if cor1 == ':green_circle:' and palavra == palavra1 \
@@ -644,14 +877,14 @@ async def cores(ctx):
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
-            await ctx.reply('Você acertou! Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação! :partying_face:')
+            await ctx.reply('Você acertou! :partying_face:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00b2ff)
             await msg.edit(embed=embedF)
         else:
             await ctx.reply('Você errou! :rofl:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
             await msg.edit(embed=embedF)
     elif tentativa == 'Laranja' or tentativa == 'laranja':
         if cor1 == ':orange_circle:' and palavra == palavra1 \
@@ -662,15 +895,21 @@ async def cores(ctx):
             cur = conn.cursor()
             cur.execute(f'UPDATE userid SET points = points + {pontos} WHERE id="{user_id}"')
             conn.commit()
-            await ctx.reply('Você acertou! Você ganhou 1 ponto por isso! Dê !rank para saber sua colocação no ranking! :partying_face:')
+            await ctx.reply('Você acertou! :partying_face:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00b2ff)
             await msg.edit(embed=embedF)
         else:
             await ctx.reply('Você errou! :rofl:')
             embedF = discord.Embed(
-        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0x00ff00)
+        title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
             await msg.edit(embed=embedF)
+
+    else:
+      embedF = discord.Embed(title="As cores eram:", description=f'{cor1} {palavra1}\n{cor2} {palavra2}\n{cor3} {palavra3}', color=0xc50b0b)
+      await ctx.reply('Você errou! :rofl:')
+      await msg.edit(embed=embedF)
+      
 @bot.command()
 async def niilismo(ctx):
         await ctx.reply(random.choice(nilismo) + str(' - Friedrich Nietzsche'), mention_author=False)
@@ -680,31 +919,80 @@ async def niilismo(ctx):
                   return await ctx.send('O bot não conseguiu baixar a imagem...')
               data = io.BytesIO(await resp.read())
               await ctx.send(file=discord.File(data, 'danilao.gif'))
-# AL
 @bot.command()
-async def al(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Algebra Linear: ' +
-                 'http://meet.google.com/uoy-bwyx-amo')
-        await ctx.channel.send(quote, delete_after=30.0)
+async def previsao(ctx):
+        await ctx.send('**!previsao** agora é **!tempo**')
+# MATRIZES PARA ESTATISTICA
+@bot.command()
+async def matriz(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Matrizes para Estatística: ' +
+                 'https://meet.google.com/ptx-urqy-bhc')
+        await ctx.channel.send(quote, delete_after=200.0)
+# DEMOGRAFIA
+@bot.command()
+async def demografia(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Demografia: ' +
+                 'https://meet.google.com/gvv-cpby-vie')
+        await ctx.channel.send(quote, delete_after=200.0)
 
-# CAL2
+# PROB 2
 @bot.command()
-async def calc2(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Cálculo 2: ' +
-                 'http://meet.google.com/rts-sene-itn')
-        await ctx.channel.send(quote, delete_after=30.0)
-# BD
+async def prob2(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Probabilidade 2: ' +
+                 'http://meet.google.com/mpn-oarf-bhz')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+# METODOS NAO PARAMETRICOS
 @bot.command()
-async def bd(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Bando de Dados: ' +
-                 'https://meet.google.com/xcw-eexd-pph')
-        await ctx.channel.send(quote, delete_after=30.0)
-# PROB
+async def metodos(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Métodos não paramétricos: ' +
+                 'https://meet.google.com/nop-wfbe-rwd')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+# INFERENCIA
 @bot.command()
-async def prob(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Probabilidade: ' +
-                 'https://meet.google.com/lookup/eslvyzohyi?authuser=1&hs=179')
-        await ctx.channel.send(quote, delete_after=30.0)
+async def inferencia(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Inferência I: ' +
+                 'https://meet.google.com/uvg-mnfj-fjq')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+# CALCULO NUMERICO
+@bot.command()
+async def calcnum(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Calculo Numerico: ' +
+                 'https://meet.google.com/knh-jgdo-krr')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+# TOPICOS DE ESTATISTICA
+@bot.command()
+async def topicos(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Topicos em Estatistica: ' +
+                 'https://meet.google.com/mwm-rxcf-uma')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+# CONTROLE ESTATISTICO DE QUALIDADE
+@bot.command()
+async def controle(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Controle Estatístico de Qualidade: ' +
+                 'https://meet.google.com/hzy-gkir-wbq')
+        await ctx.channel.send(quote, delete_after=200.0)
+        
+
+# CALC INTEGRAL
+@bot.command()
+async def calc(ctx):
+        quote = (ctx.author.mention + ' tome aqui o link de Calculo Integral: ' +
+                 'https://meet.google.com/non-jaue-nya')
+        await ctx.channel.send(quote, delete_after=200.0)
+
+@bot.command()
+async def aulas(ctx):
+  embedA = discord.Embed(
+        title="Links das aulas", description='**!controle** - Controle Estatístico de Qualidade\n**!topicos** - Tópicos em Estatística\n**!calcnum** - Cálculo Numérico\n**!calc** - Cálculo Integral\n**!inferencia** - Inferência I\n**!metodo** - Métodos não Paramétricos\n**!prob2** - Probabilidade II\n**!matriz** - Matrizes para Estatística\n**!demografia** - Demografia', color=0x00b2ff)
+  imagem_url = 'https://cfoc.org/wp-content/uploads/2014/11/click-or-not-suspicious-link-1140x500@2x.jpg'
+  embedA.set_thumbnail(url=imagem_url)
+  await ctx.send(embed=embedA)
+
 # RPG
 @bot.command()
 async def rpg(ctx):
@@ -845,7 +1133,7 @@ async def roleta(ctx):
         else:
             chances += 1
             if len(players) > 0:
-                await ctx.send(f'O {jogador} ||infelizmente|| não morreu! Diga ||girar|| para girar o tambor novamente!')
+                await ctx.send(f'O {jogador} continua vivo! Diga **girar** para continuar!')
                 girar = await bot.wait_for('message', check=check)
                 girar_tambor = girar.content
                 if girar_tambor == 'girar' or girar_tambor == 'Girar':
@@ -871,16 +1159,25 @@ async def imagem(ctx):
   
 # PREVISÃO DO TEMPO
 @bot.command()
-async def previsao(ctx):
+async def tempo(ctx):
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-  await ctx.send('Você deseja saber a previsão do tempo da semana ou apenas de agora? Responda com ``semana`` ou ``agora``.')
-  resp = await bot.wait_for('message', check=check)
-  response = resp.content
-  if response == 'agora' or response == 'Agora':
-    agora = True
-  else:
-    agora = False
+  await ctx.send('Você deseja saber o tempo de agora ou a previsão da semana? Responda com **semana** ou **agora**.')
+  i = True
+  while i:
+    resp = await bot.wait_for('message', check=check)
+    response = resp.content
+    if response == 'agora' or response == 'Agora':
+      agora = True
+      i = False
+    elif response == 'semana' or response == 'Semana':
+      agora = False
+      i = False
+    else:
+      await ctx.send('Não entendi. Digite novamente.')
+      continue
+
+  # Lê o html da página 
   url = f'https://www.tempo.com/goiania.htm'
   result = requests.get(url).text
   doc = bs(result, 'html.parser')
@@ -917,20 +1214,45 @@ async def previsao(ctx):
                     datas = div.find(class_='datos-dos-semanas')
                   except:
                     await ctx.send('erro no bot alguém me desconfiguro')
+
   if agora == True:
+    # Pegar as informações do dia atual
     div_temp = doc.find(class_='datos-estado-actual')
     real_div = div_temp.find(class_='principal')
+    dia = datas.find(class_=f'dia d1 activo')
+    item_temp = dia.find(class_='temperatura')
+    temp_max_found = item_temp.find(class_='maxima changeUnitT')
+    temp_min_found = item_temp.find(class_='minima changeUnitT')
+    temp_max = str(temp_max_found).split('>')[1].split('<')[0]
+    temp_min = str(temp_min_found).split('>')[1].split('<')[0]
+    sensacao_search = real_div.find(class_='sensacion changeUnitT')
+    sensacao_found = str(sensacao_search).split('>')[2].split('<')[0]
+    # Procura pela temperatura atual
     temp_search = real_div.find(class_='temperatura')
     temp_found = temp_search.find(class_='dato-temperatura changeUnitT')
     temperatura_atual = str(temp_found).split('>')[1].split('<')[0]
     dia = datas.find(class_=f'dia d1 activo') 
+    # Procura pela probabilidade de chuva, caso tenha
     try:
         chuva = dia.find(class_='prediccion')
         chuva_get = chuva.find(class_='probabilidad-lluvia')
         chuva_porc = str(chuva_get).split('>')[1].split('<')[0].replace(' ', '')
     except:
         chuva_porc = '0%'
-    await ctx.reply(f'Agora está fazendo ``{temperatura_atual}``.\nChance de chover é ``{chuva_porc}``')
+    chuva_porc_imagem = chuva_porc.replace('%', '')
+    chuva_porc_imagem_num = int(chuva_porc_imagem)
+    embedT = discord.Embed(title='Tempo agora - Goiânia',
+                  description=f'Agora está fazendo **{temperatura_atual}** com a sensação térmica de **{sensacao_found}**.\nA temperatura máxima de hoje é de **{temp_max}** e a mínima de **{temp_min}**.\nA chance de chover hoje é de **{chuva_porc}**.', color=0x00b2ff)
+    if chuva_porc_imagem_num < 50 and chuva_porc_imagem_num >= 30:
+      imagem_url = 'https://images.emojiterra.com/google/android-11/512px/1f327.png'
+      embedT.set_thumbnail(url=imagem_url)
+    elif chuva_porc_imagem_num > 50:
+      imagem_url = 'https://www.nicepng.com/png/full/9-91464_thunder-lightning-clip-art-thunder-and-lightning-clipart.png'
+      embedT.set_thumbnail(url=imagem_url)
+    elif chuva_porc_imagem_num < 30:
+      imagem_url = 'https://images.emojiterra.com/openmoji/v12.2/512px/26c5.png'
+      embedT.set_thumbnail(url=imagem_url)
+    await ctx.reply(embed=embedT)
 
   else:
     num = 1
@@ -946,6 +1268,9 @@ async def previsao(ctx):
           chuva_porc = str(chuva_get).split('>')[1].split('<')[0].replace(' ', '')
         except:
           chuva_porc = '0%'
+        div_temp = doc.find(class_='datos-estado-actual')
+        chuva_porc_imagem = chuva_porc.replace('%', '')
+        chuva_porc_imagem_num = int(chuva_porc_imagem)
         item_temp = dia.find(class_='temperatura')
         temp_max_found = item_temp.find(class_='maxima changeUnitT')
         temp_min_found = item_temp.find(class_='minima changeUnitT')
@@ -953,28 +1278,40 @@ async def previsao(ctx):
         temp_min = str(temp_min_found).split('>')[1].split('<')[0]
         data_found = dia.find(class_='cuando')
         data = str(data_found).split('>')[1].split('<')[0]
-        items_found[num] = {'Data': data, 'Temp Max': temp_max,'Temp Min': temp_min, 'Chuva': chuva_porc}
+        items_found[num] = {'Data': data, 'Temp Max': temp_max,'Temp Min': temp_min, 'Chuva': chuva_porc, 'Chuva Imagem': chuva_porc_imagem_num}
         num += 1
     sorted_items = items_found.items()
     for item in sorted_items:
       embedVar = discord.Embed(
                   title=f'{item[1]["Data"]}', description='', color=0x00ff00)
-      embedVar.add_field(name='Temperatura Max', value=f"``{item[1]['Temp Max']}``")
-      embedVar.add_field(name='Temperatura Min', value=f"`` {item[1]['Temp Min']}``")
-      embedVar.add_field(name='Chance de chover', value=f"``{item[1]['Chuva']}``")
-      await ctx.channel.send(embed=embedVar)
+      embedVar.add_field(name='Temperatura Max', value=f"**{item[1]['Temp Max']}**")
+      embedVar.add_field(name='Temperatura Min', value=f"**{item[1]['Temp Min']}**")
+      embedVar.add_field(name='Chance de chover', value=f"**{item[1]['Chuva']}**")
+      if int(item[1]['Chuva Imagem']) == 50:
+        imagem_url = 'https://images.emojiterra.com/google/android-11/512px/1f327.png'
+        embedVar.set_thumbnail(url=imagem_url)
+      elif int(item[1]['Chuva Imagem']) > 50:
+        imagem_url = 'https://www.nicepng.com/png/full/9-91464_thunder-lightning-clip-art-thunder-and-lightning-clipart.png'
+        embedVar.set_thumbnail(url=imagem_url)
+      elif int(item[1]['Chuva Imagem']) < 50:
+        imagem_url = 'https://images.emojiterra.com/openmoji/v12.2/512px/26c5.png'
+        embedVar.set_thumbnail(url=imagem_url)
+      await ctx.send(embed=embedVar)
+    
 # COMANDO AJUDA
 @bot.command()
 async def comandos(ctx):
   embedVar = discord.Embed(
-                          title="!comandos", description=f'``!rank``\n=> Ranking de pontos.\n\n``!mercadolivre``\n=> O bot realiza um webscraping em tempo real no site __Mercado Livre__. Nisto, você poderá pesquisar qualquer produto que esteja disponível e filtrar os resultados pelo preço.\n\n``!previsao``\n=> O bot realiza um web scraping em um site de previsão do tempo. Retorna a temperatura máxima, mínima e seus determinados dias.\n\n``!imagem``\n=> O bot manda uma imagem aleatória buscada por web scraping.\n\n``!cinema``\n=> Dê um nome de algum filme para o bot e ele retornará as notas que o filme recebeu de acordo com o site ``Adoro Cinema``.\n\n``!doguinho``\n=> doguinho fofo lindo\n\n``!significado``\n=> Quer saber o que significa Dacriocistossiringotomia? O bot vai te falar!\n\n``!ping``\n=> Teste para saber se o bot ainda está ativo no servidor do replit.\n\n``!rpg``\n=>role play\n\n``!loteria``\n=> O bot fará uma seleção de 6 números aleatórios. Cabe ao jogador apostar 6 números distintos para tentar a sorte ||de ganhar nada||.\n\n``!roleta``\n=> Roleta russa. Um tambor de 6 entradas e 1 bala girará. O bot irá rodar os jogadores aleatoriamente e disparará o gatilho. Ganha quem ficar vivo até o final. O jogador poderá escolher jogar contra outros 5 jogadores ou contra o bot.\n\n``!mm``\n=> Jogo do mais, igual ou menos. O bot escolherá um número aleatório e dará uma dica. Tal dica será um número supostamente perto do __número secreto__. Cabe ao jogador escolher as seguintes opções: o número secreto ser maior que a dica, o número secreto ser menor que a dica ou o número secreto ser igual a dica.\n\n``!pdt``\n=> Pedra, papel e tesoura.\n\n``!dados``\n=> Jogue dois dados e torça para pelo menos um deles cair com o número 1.\n\n``!cores``\n=> O bot colocará uma palavra aleatória na frente de uma cor aleatória. Após determinado tempo, o bot ocultará as palavras e as cores e, então, perguntar ao jogador qual cor se designava determinada palavra.\n\n``!bd, !al, !prob, !calc2``\n=> O bot mandará o link do meet para a aula determinada pelo usuário.\n\n``!dirso``\n=> Simplesmente dirso.\n\n``!op``\n=> O bot escolherá uma operação matemática aleatória entre números aleatórios. Acerte e não seja zoado pelo bot.\n\n``!forca``\n=> Jogo da forca.\n\n``!niilismo``\n=> cringe.', color=0x00ff00)
+                          title="!comandos", description=f'``!rank``\n=> Ranking de pontos.\n\n``!mercadolivre``\n=> O bot realiza um webscraping em tempo real no site __Mercado Livre__. Nisto, você poderá pesquisar qualquer produto que esteja disponível e filtrar os resultados pelo preço.\n\n``!previsao``\n=> O bot realiza um web scraping em um site de previsão do tempo. Retorna a temperatura máxima, mínima e seus determinados dias.\n\n``!imagem``\n=> O bot manda uma imagem aleatória buscada por web scraping.\n\n``!cinema``\n=> Dê um nome de algum filme para o bot e ele retornará as notas que o filme recebeu de acordo com o site ``Adoro Cinema``.\n\n``!anime``\n=> Web Scraping no site MyAnimeList, o bot retorna a nota que o anime/manga recebeu.\n\n``!doguinho``\n=> doguinho fofo lindo\n\n``!significado``\n=> Quer saber o que significa Dacriocistossiringotomia? O bot vai te falar!\n\n``!ping``\n=> Teste para saber se o bot ainda está ativo no servidor do replit.\n\n``!rpg``\n=>role play\n\n``!loteria``\n=> O bot fará uma seleção de 6 números aleatórios. Cabe ao jogador apostar 6 números distintos para tentar a sorte ||de ganhar nada||.\n\n``!roleta``\n=> Roleta russa. Um tambor de 6 entradas e 1 bala girará. O bot irá rodar os jogadores aleatoriamente e disparará o gatilho. Ganha quem ficar vivo até o final. O jogador poderá escolher jogar contra outros 5 jogadores ou contra o bot.\n\n``!mm``\n=> Jogo do mais, igual ou menos. O bot escolherá um número aleatório e dará uma dica. Tal dica será um número supostamente perto do __número secreto__. Cabe ao jogador escolher as seguintes opções: o número secreto ser maior que a dica, o número secreto ser menor que a dica ou o número secreto ser igual a dica.\n\n``!pdt``\n=> Pedra, papel e tesoura.\n\n``!dados``\n=> Jogue dois dados e torça para pelo menos um deles cair com o número 1.\n\n``!cores``\n=> O bot colocará uma palavra aleatória na frente de uma cor aleatória. Após determinado tempo, o bot ocultará as palavras e as cores e, então, perguntar ao jogador qual cor se designava determinada palavra.\n\n``!bd, !al, !prob, !calc2``\n=> O bot mandará o link do meet para a aula determinada pelo usuário.\n\n``!dirso``\n=> Simplesmente dirso.\n\n``!op``\n=> O bot escolherá uma operação matemática aleatória entre números aleatórios. Acerte e não seja zoado pelo bot.\n\n``!forca``\n=> Jogo da forca.\n\n``!niilismo``\n=> cringe.', color=0xc50b0b)
   await ctx.send(embed=embedVar)
   
 # MERCADO LIVRE SCRAPING
+
 @bot.command()
 async def mercadolivre(ctx):
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
+  # Parâmetros para a pesquisa
   await ctx.reply('Qual produto você quer pesquisar?')
   tag_resp = await bot.wait_for('message', check=check)
   tag = tag_resp.content
@@ -984,94 +1321,116 @@ async def mercadolivre(ctx):
     filtro = True
   else:
     filtro = False
+  if ' ' in tag:
+    tag_search = tag.replace(' ', '-')
+  else:
+    tag_search = tag
+  url = f'https://lista.mercadolivre.com.br/{tag_search}'
+
   if filtro == True:
-    if ' ' in tag:
-      tag_search = tag.replace(' ', '-')
-    else:
-      tag_search = tag
-    url = f'https://lista.mercadolivre.com.br/{tag_search}'
     await ctx.send('Qual o valor máximo que deseja filtrar? Digite um número inteiro.')
     max_pr = await bot.wait_for('message', check=check)
     max_price = max_pr.content
-  else:
-    url = f'https://lista.mercadolivre.com.br/{tag}'
-
-  
+    await max_pr.add_reaction('👍')
+    await ctx.send('Qual o valor mínimo que deseja filtrar? Digite um número inteiro.')
+    min_pr = await bot.wait_for('message', check=check)
+    min_price = min_pr.content
+    await min_pr.add_reaction('👍')
+  # Ler o HTML da página
   result = requests.get(url).text
   doc = bs(result, 'html.parser')
   items_found = {}
-  #div = doc.find(class_='ui-search-results ui-search-results--without-disclaimer')
+  # Procurar pela classe que contém apenas os resultados da pesquisa
   div = doc.find(class_='ui-search-results')
   item_search = tag.split(' ')
   if len(item_search) >= 2:
     item_search = item_search[0]
   else:
     item_search = tag_search
+  # Procura somente os items que contém o texto que o usuário determinou
   try:
     items = div.find_all(text=re.compile(item_search, re.IGNORECASE))
   except:
     items = False
   if items != False:
       for item in items:
+        # Procura pela árvore que contém o item 
         try:
-          next_parent = item.find_parent(class_='ui-search-layout__item')
-          links = next_parent.find(class_='ui-search-result__image')
+            next_parent = item.find_parent(class_='ui-search-layout__item')
         except:
-          await ctx.send('.')
+            await ctx.send('.')
         try:
+          frete_search = next_parent.find(class_='ui-search-item__group ui-search-item__group--shipping')
+          frete_found = str(frete_search).split('>')[3].split('<')[0]
+          if frete_found != 'Frete grátis':
+            frete = 'Pago'
+          else:
+            frete = frete_found
+        except:
+          frete = 'Pago'
+        # Procura o link que está dentro da árvore - Este será o link do item
+        try:
+            links = next_parent.find(class_='ui-search-result__image')
             link_get = str(links).split('<a')[1].split('title')[-2].split('href')[1].split('=')[1]
             link_new = link_get.split('//')[1]
-            if link_new[0] == 'p' or link_new[1] == 'w' or link_new[0] == 'm':
-              link = link_get
+            if link_new[0] == 'p' or link_new[1] == 'w' or link_new[0] == 'm' or link_new[0] == 'c':
+              if 'click1' not in link_new:
+                link = link_get
+              else:
+                link = 'o bot não conseguiu encontrar o link'
             else:
               link = 'o bot não conseguiu encontrar o link'
         except:
             link = 'o bot não conseguiu encontrar o link'
-        image_src = links.find(class_='carousel-container arrow-visible')
-        link_image = str(image_src).split('src=')[1].split('height')[0].replace('"','')
-      
+        # Procura pela fonte da imagem que está dentro da árvore
         try:
-          prices = next_parent.find(class_="price-tag-fraction")
-          price = str(prices).split('>')[-2].split('<')[0]
-          items_found[item] = {'price': price.replace(",", ""),'link': link.replace('"',''), 'image': link_image}
+            image_src = links.find(class_='carousel-container arrow-visible')
+            link_image = str(image_src).split('src=')[1].split('height')[0].replace('"','')
         except:
-          price = 'preço not found'
+            link_image = 'https://cdn.pixabay.com/photo/2017/04/09/12/45/error-2215702_960_720.png'
+        # Procura pelo preço do item dentro da árvore
+        try:
+            prices = next_parent.find(class_="price-tag-fraction")
+            price = str(prices).split('>')[-2].split('<')[0]
+            items_found[item] = {'price': price.replace(",", ""),'link': link.replace('"',''), 'image': link_image, 'frete': frete}
+        except:
+            price = 'preço não encontrado'
 
       sorted_items = sorted(items_found.items(), key=lambda x: x[1]['price'])
       num_items = 0
       for item in sorted_items:
         if filtro == True:
           try:
-              if int(item[1]['price'].replace('.', '')) <= int(max_price):
+              if int(item[1]['price'].replace('.', '')) <= int(max_price) and int(item[1]['price'].replace('.', '')) >= int(min_price):
                 num_items += 1
                 embedVar = discord.Embed(
-                            title="Nome do item", description=f'{item[0]}', color=0x00ff00)
-                embedVar.add_field(name='Valor do item', value=f"``R${item[1]['price']}``")
+                            title=f"{item[0]}", color=0x121274)
+                embedVar.add_field(name='Valor do item', value=f"**R${item[1]['price']}**")
                 embedVar.add_field(name='Link do item', value=f" {item[1]['link']}")
+                embedVar.add_field(name='Frete', value=f" **{item[1]['frete']}**")
                 embedVar.set_thumbnail(url=f"{item[1]['image']}")
                 await ctx.channel.send(embed=embedVar)
-                #await ctx.send(item[0])
-                #await ctx.send(f"R${item[1]['price']}")
-                #await ctx.send(f"Link: {item[1]['link']}"
           except:
-            await ctx.send('erro')
+            await ctx.send('quebrei')
         else:
           embedVar = discord.Embed(
-                      title="Nome do item", description=f'{item[0]}', color=0x00ff00)
-          embedVar.add_field(name='Valor do item', value=f"``R${item[1]['price']}``")
+                      title=f"{item[0]}", color=0x121274)
+          embedVar.add_field(name='Valor do item', value=f"**R${item[1]['price']}**")
           embedVar.add_field(name='Link do item', value=f" {item[1]['link']}")
+          embedVar.add_field(name='Frete', value=f" **{item[1]['frete']}**")
+          embedVar.set_thumbnail(url=f"{item[1]['image']}")
           await ctx.channel.send(embed=embedVar)
           
       if filtro == True:
         if num_items >= 1:
-              await ctx.send(f'Estes foram os ``{num_items}`` resultados da minha busca filtrada!\nObs: por motivos de lentidão do replit ou do próprio mercado livre, a quantidade de resultados pode variar a cada varredura.')
+              await ctx.send(f'Estes foram os ``{num_items}`` resultados da minha busca filtrada!')
         else:
-            await ctx.send(f'Não consegui encontrar ``{tag}`` filtrado em ``R${max_price}``. Aumente o valor do filtro ou escreva o nome do produto de outra forma.')
+              await ctx.send(f'Não consegui encontrar ``{tag}`` filtrado em ``R${max_price}``. Aumente o valor do filtro ou escreva o nome do produto de outra forma.')
       else:
         if len(items_found) >= 1:
-            await ctx.send(f'Estes foram os ``{len(items_found)}`` resultados da minha busca!\nObs: por motivos de lentidão do replit ou do próprio mercado livre, a quantidade de resultados podem variar a cada varredura.')
+              await ctx.send(f'Estes foram os ``{len(items_found)}`` resultados da minha busca!')
         elif len(items_found) == 0:
-            await ctx.send(f'Infelizmente não consegui encontrar ``{tag}``. Por favor, me chame novamente e tente escrever o nome do produto de outra forma.')
+              await ctx.send(f'Infelizmente não consegui encontrar ``{tag}``. Por favor, me chame novamente e tente escrever o nome do produto de outra forma.')
   else:
     await ctx.send(f'Infelizmente não consegui encontrar ``{tag}``. Por favor, me chame novamente e tente escrever o nome do produto de outra forma.')
 
@@ -1080,7 +1439,8 @@ async def mercadolivre(ctx):
 
 @bot.command()
 async def ping(ctx):
-  await ctx.send('to aqui')
+  await ctx.send('https://gifimage.net/wp-content/uploads/2018/11/small-might-gif.gif')
+
 # MEMBRO NOVO
 
 @bot.event
@@ -1091,7 +1451,7 @@ async def on_member_join(member):
             if resp.status != 200:
                 return await channel.send('O bot não conseguiu baixar a imagem...')
             data = io.BytesIO(await resp.read())
-    await channel.send(file=discord.File(data, 'danilao.png'))
+    await channel.send(member.mention, file=discord.File(data, 'danilao.png'))
 
 @bot.event
 async def on_message(message):
@@ -1101,28 +1461,49 @@ async def on_message(message):
     msg = message.content
     if message.author == bot.user:
         return
+    # Nome ou id do usuário 
     user_id = str(message.author).split('#')[0]
+    # Conectando ao banco de addos
     conn = sqlite3.connect('users.db')
     cur = conn.cursor()
+    # Selecionando o id da tabela userid
     cur.execute(f'SELECT id FROM userid WHERE id="{user_id}"')
+    # Checa se tal id já existe no banco de dados, se não existir ele cria um novo
     result = cur.fetchone()
     if result is None:
+      # Ignora se o usuário é um bot ou o próprio Bot do Link
       if message.author == bot.user:
         return
       elif message.author.bot:
         return
       else:
+        # Insere o id do novo usuário dentro do banco de dados
         cur.execute('INSERT INTO userid (id) VALUES (?)', (user_id, ))
         print(f'{user_id} foi adicionado ao banco')
+        # Atualiza o banco de dados
         conn.commit()
-      
+    
     if any(word in msg for word in sad_words):
-        await message.channel.send('Gambatê!')
-    if message.content.startswith('id'):
+        async with aiohttp.ClientSession() as session:
+          async with session.get('https://c.tenor.com/iq2DpeeqfugAAAAC/ganbatte-butterfly-estate.gif') as resp:
+              if resp.status != 200:
+                  return await message.send('O bot não conseguiu baixar a imagem...')
+              data = io.BytesIO(await resp.read())
+        await message.reply(file=discord.File(data, 'gambate.gif'))
+    if message.content.startswith('me da o meu id ai bot'):
         await message.channel.send(message.author.id)
-    if message.content.startswith('Olá, bot'):
-        quote = ('Olá, ' + str(message.author.mention))
-        await message.reply(quote, mention_author=False)
+    if message.content.startswith('salve bot'):
+        await message.reply('salve cachorro')
+    if message.content.startswith('quem é o mais lindo'):
+      pessoas = ['danilo', 'gabs',' vinihomem', 'dori', 'eu']
+      extra = ['é claro uai', 'é o mais lindo com certeza', 'com certeza']
+      people = random.choice(pessoas)
+      extra2 = random.choice(extra)
+      if people == 'eu':
+        extra2 = 'sou o mais lindo'
+        await message.channel.send(f'{people} {extra2}')
+      else:
+        await message.channel.send(f'{people} {extra2}')
     if message.content.startswith('bot burro'):
         palavras = ['teu pai', 'quem?','q-que eu fiz de errado?', 'd-desculpa :pensive:','quem?','quem?','quem?','quem?']
         palavra = random.choice(palavras)
@@ -1138,8 +1519,6 @@ async def on_message(message):
         await message.reply('<:sapo_amor:846410960666361890>')
     if message.content.startswith('tchau bot'):
         await message.channel.send('flws :wave:')
-    if message.content.startswith('reação'):
-        await message.add_reaction('<:sapo_amor:846410960666361890>')
     quotes_musical = 'TAKE ME HOMEEEEEEEEEEEE, ITS THE ONLY PLACE I CAN REST IN PIECEEEEEE'
     trigger_musical = ['take']
     for word in trigger_musical:
