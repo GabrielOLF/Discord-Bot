@@ -19,11 +19,24 @@ import sqlite3
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
 
-sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza', 'eu não consigo', 'sou burro', 'meu deus']
+sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza', 'meu deus']
 nilismo = ["A filosofia é o exílio voluntário entre montanhas geladas.", "Nós, homens do conhecimento, não nos conhecemos; de nós mesmo somos desconhecidos.", "Não me roube a solidão sem antes me oferecer verdadeira companhia.", "O amor é o estado no qual os homens têm mais probabilidades de ver as coisas tal como elas não são.", "Como são múltiplas as ocasiões para o mal-entendido e para a ruptura hostil!", "Deus está morto. Viva Perigosamente. Qual o melhor remédio? - Vitória!", "A diferença fundamental entre as duas religiões da decadência: o budismo não promete, mas assegura. O cristianismo promete tudo, mas não cumpre nada.", "Quando se coloca o centro de gravidade da vida não na vida mas no além - no nada -, tira-se da vida o seu centro de gravidade.", "Para ler o Novo Testamento é conveniente calçar luvas. Diante de tanta sujeira, tal atitude é necessária."]
 
 @bot.event
 async def on_ready():
+    conn = sqlite3.connect('users.db')
+    cur = conn.cursor()
+    """cur.execute('DROP TABLE IF EXISTS grades')"""
+    cur.execute('''CREATE TABLE IF NOT EXISTS grades(
+                            id TEXT,
+                            segunda TEXT,
+                            terca TEXT,
+                            quarta TEXT,
+                            quinta TEXT,
+                            sexta TEXT
+                            )''')
+    conn.commit()
+    cur.close()
     DiscordComponents(bot)
     print(f'{bot.user} ta vivo caraio.')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='música erudita'))
@@ -34,6 +47,9 @@ async def on_command_error(ctx, error):
       else:
         await ctx.send('Este comando não existe. Digite !comandos para conhecer os meus comandos.')
     return
+
+
+  
 """----------Consertar essa porra depois
 @bot.command()
 async def anime(ctx):
@@ -77,6 +93,315 @@ async def anime(ctx):
   embedA.set_thumbnail(url=f"{image_link}")
   await ctx.send(embed=embedA)
 """
+@bot.command()
+async def criar_grade(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  await ctx.send('Digite a disciplina em cada horário. Caso não tenha disciplina em tal horário, digite "-".')
+  run = True
+  await ctx.send('**SEGUNDA-FEIRA**')
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  num = 0
+  segunda_lista = []
+  while run:
+    await ctx.send(f'Aula às {horarios[num]}:')
+    resp = await bot.wait_for('message', check=check)
+    resposta = str(resp.content)
+    cur.execute(f'INSERT INTO grades (id, segunda) VALUES (?, ?)', (user_id, resposta))
+    conn.commit()
+    segunda_lista.append(resposta)
+    num += 1
+    if len(segunda_lista) == 8:
+      run = False
+    else:
+      continue
+
+  await ctx.send('**TERÇA-FEIRA**')
+  nums = 0
+  segunda_lista_1 = []
+  runs = True
+  while runs:
+    await ctx.send(f'Aula às {horarios[nums]}:')
+    respo = await bot.wait_for('message', check=check)
+    respostas = str(respo.content)
+    cur.execute(f'INSERT INTO grades (id, terca) VALUES (?, ?)', (user_id, respostas))
+    conn.commit()
+    segunda_lista_1.append(respostas)
+    nums += 1
+    if len(segunda_lista_1) == 8:
+      runs = False
+    else:
+      continue
+
+  await ctx.send('**QUARTA-FEIRA**')
+  num = 0
+  segunda_lista = []
+  run = True
+  while run:
+    await ctx.send(f'Aula às {horarios[num]}:')
+    resp = await bot.wait_for('message', check=check)
+    resposta = str(resp.content)
+    cur.execute(f'INSERT INTO grades (id, quarta) VALUES (?, ?)', (user_id, resposta))
+    conn.commit()
+    segunda_lista.append(resposta)
+    num += 1
+    if len(segunda_lista) == 8:
+      run = False
+    else:
+      continue
+
+  await ctx.send('**QUINTA-FEIRA**')
+  
+  num = 0
+  segunda_lista = []
+  run = True
+  while run:
+    await ctx.send(f'Aula às {horarios[num]}:')
+    resp = await bot.wait_for('message', check=check)
+    resposta = str(resp.content)
+    cur.execute(f'INSERT INTO grades (id, quinta) VALUES (?, ?)', (user_id, resposta))
+    conn.commit()
+    segunda_lista.append(resposta)
+    num += 1
+    if len(segunda_lista) == 8:
+      run = False
+    else:
+      continue
+  run = True
+  await ctx.send('**SEXTA-FEIRA**')
+  
+  num = 0
+  segunda_lista = []
+  while run:
+    await ctx.send(f'Aula às {horarios[num]}:')
+    resp = await bot.wait_for('message', check=check)
+    resposta = str(resp.content)
+    cur.execute(f'INSERT INTO grades (id, sexta) VALUES (?, ?)', (user_id, resposta))
+    conn.commit()
+    segunda_lista.append(resposta)
+    num += 1
+    if len(segunda_lista) == 8:
+      run = False
+    else:
+      continue
+  
+  await ctx.send("Sua grade foi salvada no banco com sucesso. Caso queira checar individualmente cada dia, digite '!{dia da semana}'")
+  
+@bot.command()
+async def grade_geral(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, segunda FROM grades WHERE segunda IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas_segunda = ''
+  materias_segunda = ''
+  number_segunda = 0
+  for row in cur:
+      materias_segunda =  f'**{horarios[number_segunda]}**' + ': ' + row[1] + '\n'
+      aulas_segunda += materias_segunda
+      number_segunda += 1
+  try:
+    cur.execute(f'SELECT id, terca FROM grades WHERE terca IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas_terca = ''
+  materias_terca = ''
+  number_terca = 0
+  for row in cur:
+      materias_terca =  f'**{horarios[number_terca]}**' + ': ' + row[1] + '\n'
+      aulas_terca += materias_terca
+      number_terca += 1
+  try:
+    cur.execute(f'SELECT id, quarta FROM grades WHERE quarta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas_quarta = ''
+  materias_quarta = ''
+  number_quarta = 0
+  for row in cur:
+      materias_quarta =  f'**{horarios[number_quarta]}**' + ': ' + row[1] + '\n'
+      aulas_quarta += materias_quarta
+      number_quarta += 1
+  try:
+    cur.execute(f'SELECT id, quinta FROM grades WHERE quinta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas_quinta = ''
+  materias_quinta = ''
+  number_quinta = 0
+  for row in cur:
+      materias_quinta =  f'**{horarios[number_quinta]}**' + ': ' + row[1] + '\n'
+      aulas_quinta += materias_quinta
+      number_quinta += 1
+  try:
+    cur.execute(f'SELECT id, sexta FROM grades WHERE sexta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas_sexta = ''
+  materias_sexta = ''
+  number_sexta = 0
+  for row in cur:
+      materias_sexta =  f'**{horarios[number_sexta]}**' + ': ' + row[1] + '\n'
+      aulas_sexta += materias_sexta
+      number_sexta += 1
+  embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Segunda-Feira",color=0x06adc4)
+  embedVar.add_field(name='Segunda-Feira', value=f"{aulas_segunda}")
+  embedVar.add_field(name='Terça-Feira', value=f"{aulas_terca}")
+  embedVar.add_field(name='Quarta-Feira', value=f"{aulas_quarta}")
+  embedVar.add_field(name='Quinta-Feira', value=f"{aulas_quinta}")
+  embedVar.add_field(name='Sexta-Feira', value=f"{aulas_sexta}")
+  await ctx.send(embed=embedVar)
+@bot.command()
+async def deletar_grade(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  user_id = str(ctx.author).split('#')[0]
+  await ctx.send('Você tem certeza que deseja deletar a sua grade?')
+  resp = await bot.wait_for('message', check=check)
+  response = str(resp.content)
+  if response == 'Sim' or response == 'sim':
+    conn = sqlite3.connect('users.db')
+    cur = conn.cursor()
+    try:
+      cur.execute(f'DELETE FROM grades WHERE id= ?', (user_id, ))
+      conn.commit()
+      await ctx.send('Pronto.')
+    except:
+      await ctx.send('Não consegui deletar a sua grade.')
+  else:
+    await ctx.send('Entendível, até um outro dia.')
+
+@bot.command()
+async def segunda(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, segunda FROM grades WHERE segunda IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas = ''
+  materias = ''
+  number = 0
+  for row in cur:
+      materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+      aulas += materias
+      number += 1
+  if len(aulas) == 0:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Segunda-Feira", description=(f'{aulas}'),color=0x06adc4)
+    await ctx.send(embed=embedVar)
+@bot.command()
+async def terca(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, terca FROM grades WHERE terca IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas = ''
+  materias = ''
+  number = 0
+  try:
+    for row in cur:
+      materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+      aulas += materias
+      number += 1
+  
+  except:
+    await ctx.send('erro aqui')
+  
+  if len(aulas) == 0:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Terça-Feira", description=(f'{aulas}'),color=0x06adc4)
+    await ctx.send(embed=embedVar)
+@bot.command()
+async def quarta(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, quarta FROM grades WHERE quarta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas = ''
+  materias = ''
+  number = 0
+  for row in cur:
+    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    aulas += materias
+    number += 1
+  if len(aulas) == 0:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Quarta-Feira", description=(f'{aulas}'),color=0x06adc4)
+    await ctx.send(embed=embedVar)
+@bot.command()
+async def quinta(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, quinta FROM grades WHERE quinta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas = ''
+  materias = ''
+  number = 0
+  for row in cur:
+    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    aulas += materias
+    number += 1
+  if len(aulas) == 0:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Quinta-Feira", description=(f'{aulas}'),color=0x06adc4)
+    await ctx.send(embed=embedVar)
+@bot.command()
+async def sexta(ctx):
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  try:
+    cur.execute(f'SELECT id, sexta FROM grades WHERE sexta IS NOT NULL and id= "{user_id}"')
+  except:
+    await ctx.send('erro erro erro erro')
+  aulas = ''
+  materias = ''
+  number = 0
+  for row in cur:
+    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    aulas += materias
+    number += 1
+  if len(aulas) == 0:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    embedVar = discord.Embed(
+                              title=f"Sua grade de aulas na Sexta-Feira", description=(f'{aulas}'),color=0x06adc4)
+    await ctx.send(embed=embedVar)
+  
+  
+  
 @bot.command()
 async def palavras(ctx):
   conn = sqlite3.connect('users.db')
@@ -960,7 +1285,7 @@ async def inferencia(ctx):
 @bot.command()
 async def calcnum(ctx):
         quote = (ctx.author.mention + ' tome aqui o link de Calculo Numerico: ' +
-                 'https://meet.google.com/knh-jgdo-krr')
+                 'https://meet.google.com/noy-vwwh-oha')
         await ctx.channel.send(quote, delete_after=200.0)
 
 # TOPICOS DE ESTATISTICA
@@ -1538,4 +1863,5 @@ async def on_message(message):
                 break
 keep_alive()
 bot.run(cod)
+
 
