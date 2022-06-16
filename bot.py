@@ -4,7 +4,6 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 from discord_components import *
 from asyncio import TimeoutError
-from keep_alive import keep_alive
 from discord.utils import get
 import io
 import aiohttp
@@ -15,41 +14,42 @@ import re
 import random
 import time
 import sqlite3
+from discord.ext import commands, tasks
+import asyncio
+import datetime
 
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
 
-sad_words = ['Eu não consigo, bot', 'Estou triste', 'que tristeza', 'meu deus']
+sad_words = ['meu deus, que tristeza']
 nilismo = ["A filosofia é o exílio voluntário entre montanhas geladas.", "Nós, homens do conhecimento, não nos conhecemos; de nós mesmo somos desconhecidos.", "Não me roube a solidão sem antes me oferecer verdadeira companhia.", "O amor é o estado no qual os homens têm mais probabilidades de ver as coisas tal como elas não são.", "Como são múltiplas as ocasiões para o mal-entendido e para a ruptura hostil!", "Deus está morto. Viva Perigosamente. Qual o melhor remédio? - Vitória!", "A diferença fundamental entre as duas religiões da decadência: o budismo não promete, mas assegura. O cristianismo promete tudo, mas não cumpre nada.", "Quando se coloca o centro de gravidade da vida não na vida mas no além - no nada -, tira-se da vida o seu centro de gravidade.", "Para ler o Novo Testamento é conveniente calçar luvas. Diante de tanta sujeira, tal atitude é necessária."]
 
 @bot.event
 async def on_ready():
-    conn = sqlite3.connect('users.db')
-    cur = conn.cursor()
-    """cur.execute('DROP TABLE IF EXISTS grades')"""
-    cur.execute('''CREATE TABLE IF NOT EXISTS grades(
-                            id TEXT,
-                            segunda TEXT,
-                            terca TEXT,
-                            quarta TEXT,
-                            quinta TEXT,
-                            sexta TEXT
-                            )''')
-    conn.commit()
-    cur.close()
+    #db_connect = sqlite3.connect('users.db')
+    #rat = db_connect.cursor()
+    #rat.execute('DROP TABLE IF EXISTS userid')
+    #rat.execute('CREATE TABLE IF NOT EXISTS userid(id TEXT, pontos INT DEFAULT 0, money INT DEFAULT 100)')
+    #rat.execute('CREATE TABLE IF NOT EXISTS grades(id TEXT, segunda TEXT, terca TEXT, quarta TEXT, quinta TEXT, sexta TEXT)')
+    #db_connect.commit()
     DiscordComponents(bot)
-    print(f'{bot.user} ta vivo caraio.')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='música erudita'))
+    print(f'{bot.user}')
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name='busco namoro'))
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
       if ctx.author.bot:return
       else:
-        await ctx.send('Este comando não existe. Digite !comandos para conhecer os meus comandos.')
+        await ctx.reply('falou comigo?')
     return
 
 
-  
+
+@bot.command()
+async def datahora(ctx):
+  hora_data = datetime.datetime.now()
+  data_hora = str(hora_data).split('.')[0].split(' ')[1]
+  await ctx.reply(data_hora)
 """----------Consertar essa porra depois
 @bot.command()
 async def anime(ctx):
@@ -93,6 +93,34 @@ async def anime(ctx):
   embedA.set_thumbnail(url=f"{image_link}")
   await ctx.send(embed=embedA)
 """
+"""@bot.command()
+async def letreco(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+ 
+  await ctx.send('Todos os dias o bot lançará uma palavra de 5 letras diferente! Dê a ele 5 letras e tente adivinhar a palavra secreta.')
+  word_secret = 'certo'
+  resp = await bot.wait_for('message',check=check)
+  response = str(resp.content)
+  letter_user = response.lower()
+  for index, letter in enumerate(word_secret):
+      for idx, i in enumerate(letter_user):
+          if i == letter and idx == index:
+              await ctx.send(f'A letra {i} está certa e no lugar certo!')
+          if i == letter and idx != index:
+              await ctx.send(f'A letra {i} está certa porém no lugar errado.')
+          if i != letter:
+            await ctx.send(f'A letra {i} não está na palavra!')
+    
+embedVar = discord.Embed(
+                              title=f"Letreco",color=0x06adc4)
+  embedVar.add_field(name=f'Palavra embaralhada', value=f'{final_word}')
+  image_found = 'https://media3.giphy.com/media/NVBR6cLvUjV9C/giphy_s.gif'
+  embedVar.set_thumbnail(url=f"{image_found}")
+  await ctx.send(embed=embedVar)
+
+"""
+
 @bot.command()
 async def criar_grade(ctx):
   user_id = str(ctx.author).split('#')[0]
@@ -100,21 +128,23 @@ async def criar_grade(ctx):
   cur = conn.cursor()
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
-  await ctx.send('Digite a disciplina em cada horário. Caso não tenha disciplina em tal horário, digite "-".')
+  await ctx.send('Digite a disciplina em cada horário. Caso não tenha disciplina em tal horário, digite "-". Caso esteja criando outra grade, favor deletar do banco a antiga com ``!deletar_grade`` antes de criar uma nova. Caso queira parar com a operação, digite ``parar``.')
   run = True
   await ctx.send('**SEGUNDA-FEIRA**')
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   num = 0
   segunda_lista = []
   while run:
     await ctx.send(f'Aula às {horarios[num]}:')
     resp = await bot.wait_for('message', check=check)
     resposta = str(resp.content)
+    if resposta == 'parar' or resposta == 'Parar' or resposta == 'PARAR':
+      run = False
     cur.execute(f'INSERT INTO grades (id, segunda) VALUES (?, ?)', (user_id, resposta))
     conn.commit()
     segunda_lista.append(resposta)
     num += 1
-    if len(segunda_lista) == 8:
+    if len(segunda_lista) == len(horarios):
       run = False
     else:
       continue
@@ -127,11 +157,13 @@ async def criar_grade(ctx):
     await ctx.send(f'Aula às {horarios[nums]}:')
     respo = await bot.wait_for('message', check=check)
     respostas = str(respo.content)
+    if resposta == 'parar' or resposta == 'Parar' or resposta == 'PARAR':
+      runs = False
     cur.execute(f'INSERT INTO grades (id, terca) VALUES (?, ?)', (user_id, respostas))
     conn.commit()
     segunda_lista_1.append(respostas)
     nums += 1
-    if len(segunda_lista_1) == 8:
+    if len(segunda_lista_1) == len(horarios):
       runs = False
     else:
       continue
@@ -144,11 +176,13 @@ async def criar_grade(ctx):
     await ctx.send(f'Aula às {horarios[num]}:')
     resp = await bot.wait_for('message', check=check)
     resposta = str(resp.content)
+    if resposta == 'parar' or resposta == 'Parar' or resposta == 'PARAR':
+      run = False
     cur.execute(f'INSERT INTO grades (id, quarta) VALUES (?, ?)', (user_id, resposta))
     conn.commit()
     segunda_lista.append(resposta)
     num += 1
-    if len(segunda_lista) == 8:
+    if len(segunda_lista) == len(horarios):
       run = False
     else:
       continue
@@ -162,11 +196,13 @@ async def criar_grade(ctx):
     await ctx.send(f'Aula às {horarios[num]}:')
     resp = await bot.wait_for('message', check=check)
     resposta = str(resp.content)
+    if resposta == 'parar' or resposta == 'Parar' or resposta == 'PARAR':
+      run = False
     cur.execute(f'INSERT INTO grades (id, quinta) VALUES (?, ?)', (user_id, resposta))
     conn.commit()
     segunda_lista.append(resposta)
     num += 1
-    if len(segunda_lista) == 8:
+    if len(segunda_lista) == len(horarios):
       run = False
     else:
       continue
@@ -179,86 +215,146 @@ async def criar_grade(ctx):
     await ctx.send(f'Aula às {horarios[num]}:')
     resp = await bot.wait_for('message', check=check)
     resposta = str(resp.content)
+    if resposta == 'parar' or resposta == 'Parar' or resposta == 'PARAR':
+      run = False
     cur.execute(f'INSERT INTO grades (id, sexta) VALUES (?, ?)', (user_id, resposta))
     conn.commit()
     segunda_lista.append(resposta)
     num += 1
-    if len(segunda_lista) == 8:
+    if len(segunda_lista) == len(horarios):
       run = False
     else:
       continue
   
-  await ctx.send("Sua grade foi salvada no banco com sucesso. Caso queira checar individualmente cada dia, digite '!{dia da semana}'")
-  
+  await ctx.send("Sua grade foi salva no banco com sucesso. Caso queira checar individualmente cada dia, digite '!{dia da semana}'")
+
+@bot.command()
+async def editar_grade(ctx):
+  def check(res):
+        return ctx.author == res.author and res.channel == ctx.channel
+  user_id = str(ctx.author).split('#')[0]
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  cur.execute(f'SELECT id, segunda FROM grades WHERE id="{user_id}"')
+  x = cur.fetchall()
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
+  try:
+    if x != None:
+      await ctx.reply('Você deseja editar qual dia da sua grade?')  
+      resp = await bot.wait_for('message', check=check)
+      response = str(resp.content)
+      day = response.lower()
+      try:
+        continuar = True
+        cur.execute(f'UPDATE grades SET {day}=Null WHERE id="{user_id}"')
+        conn.commit()
+      except:
+        await ctx.send('erro no update')
+        continuar = False
+      run = True
+      num = 0
+      segunda_lista = []
+      if continuar == True:
+        while run:
+          await ctx.send(f'``{day}``')
+          await ctx.send(f'Aula às {horarios[num]}:')
+          resp = await bot.wait_for('message', check=check)
+          resposta = str(resp.content)
+          cur.execute(f'INSERT INTO grades (id, {day}) VALUES (?, ?)', (user_id, resposta))
+          conn.commit()
+          segunda_lista.append(resposta)
+          num += 1
+          if len(segunda_lista) == len(horarios):
+            run = False
+          else:
+            continue
+        await ctx.send('Grade editada com sucesso!')
+      else:
+        return
+      
+    else:
+      await ctx.send('Você ainda não fez uma grade. Crie sua grade usando ``!criar_grade``.')
+  except:
+    await ctx.send('erro no editar')
+
 @bot.command()
 async def grade_geral(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
-  try:
-    cur.execute(f'SELECT id, segunda FROM grades WHERE segunda IS NOT NULL and id= "{user_id}"')
-  except:
-    await ctx.send('erro erro erro erro')
-  aulas_segunda = ''
-  materias_segunda = ''
-  number_segunda = 0
-  for row in cur:
-      materias_segunda =  f'**{horarios[number_segunda]}**' + ': ' + row[1] + '\n'
-      aulas_segunda += materias_segunda
-      number_segunda += 1
-  try:
-    cur.execute(f'SELECT id, terca FROM grades WHERE terca IS NOT NULL and id= "{user_id}"')
-  except:
-    await ctx.send('erro erro erro erro')
-  aulas_terca = ''
-  materias_terca = ''
-  number_terca = 0
-  for row in cur:
-      materias_terca =  f'**{horarios[number_terca]}**' + ': ' + row[1] + '\n'
-      aulas_terca += materias_terca
-      number_terca += 1
-  try:
-    cur.execute(f'SELECT id, quarta FROM grades WHERE quarta IS NOT NULL and id= "{user_id}"')
-  except:
-    await ctx.send('erro erro erro erro')
-  aulas_quarta = ''
-  materias_quarta = ''
-  number_quarta = 0
-  for row in cur:
-      materias_quarta =  f'**{horarios[number_quarta]}**' + ': ' + row[1] + '\n'
-      aulas_quarta += materias_quarta
-      number_quarta += 1
-  try:
-    cur.execute(f'SELECT id, quinta FROM grades WHERE quinta IS NOT NULL and id= "{user_id}"')
-  except:
-    await ctx.send('erro erro erro erro')
-  aulas_quinta = ''
-  materias_quinta = ''
-  number_quinta = 0
-  for row in cur:
-      materias_quinta =  f'**{horarios[number_quinta]}**' + ': ' + row[1] + '\n'
-      aulas_quinta += materias_quinta
-      number_quinta += 1
-  try:
-    cur.execute(f'SELECT id, sexta FROM grades WHERE sexta IS NOT NULL and id= "{user_id}"')
-  except:
-    await ctx.send('erro erro erro erro')
-  aulas_sexta = ''
-  materias_sexta = ''
-  number_sexta = 0
-  for row in cur:
-      materias_sexta =  f'**{horarios[number_sexta]}**' + ': ' + row[1] + '\n'
-      aulas_sexta += materias_sexta
-      number_sexta += 1
-  embedVar = discord.Embed(
-                              title=f"Sua grade de aulas na Segunda-Feira",color=0x06adc4)
-  embedVar.add_field(name='Segunda-Feira', value=f"{aulas_segunda}")
-  embedVar.add_field(name='Terça-Feira', value=f"{aulas_terca}")
-  embedVar.add_field(name='Quarta-Feira', value=f"{aulas_quarta}")
-  embedVar.add_field(name='Quinta-Feira', value=f"{aulas_quinta}")
-  embedVar.add_field(name='Sexta-Feira', value=f"{aulas_sexta}")
-  await ctx.send(embed=embedVar)
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  cur.execute(f'SELECT id FROM grades WHERE id="{user_id}"')
+  result = cur.fetchone()
+  if result is None:
+    await ctx.send('Você ainda não fez sua grade de horários.')
+  else:
+    try:
+      cur.execute(f'SELECT id, segunda FROM grades WHERE segunda IS NOT NULL and id= "{user_id}"')
+    except:
+      await ctx.send('erro erro erro erro')
+    aulas_segunda = ''
+    materias_segunda = ''
+    number_segunda = 0
+    for row in cur:
+        materias_segunda =  f'**{horarios[number_segunda]}**' + ':\n' + f'``{row[1]}``' + '\n'
+        aulas_segunda += materias_segunda
+        number_segunda += 1
+    try:
+      cur.execute(f'SELECT id, terca FROM grades WHERE terca IS NOT NULL and id= "{user_id}"')
+    except:
+      await ctx.send('erro erro erro erro')
+    aulas_terca = ''
+    materias_terca = ''
+    number_terca = 0
+    for row in cur:
+        materias_terca =  f'**{horarios[number_terca]}**' + ':\n' + f'``{row[1]}``' + '\n'
+        aulas_terca += materias_terca
+        number_terca += 1
+    try:
+      cur.execute(f'SELECT id, quarta FROM grades WHERE quarta IS NOT NULL and id= "{user_id}"')
+    except:
+      await ctx.send('erro erro erro erro')
+    aulas_quarta = ''
+    materias_quarta = ''
+    number_quarta = 0
+    for row in cur:
+        materias_quarta =  f'**{horarios[number_quarta]}**' + ':\n' + f'``{row[1]}``' + '\n'
+        aulas_quarta += materias_quarta
+        number_quarta += 1
+    try:
+      cur.execute(f'SELECT id, quinta FROM grades WHERE quinta IS NOT NULL and id= "{user_id}"')
+    except:
+      await ctx.send('erro erro erro erro')
+    aulas_quinta = ''
+    materias_quinta = ''
+    number_quinta = 0
+    for row in cur:
+        materias_quinta =  f'**{horarios[number_quinta]}**' + ':\n' + f'``{row[1]}``'+ '\n'
+        aulas_quinta += materias_quinta
+        number_quinta += 1
+    try:
+      cur.execute(f'SELECT id, sexta FROM grades WHERE sexta IS NOT NULL and id= "{user_id}"')
+    except:
+      await ctx.send('erro erro erro erro')
+    aulas_sexta = ''
+    materias_sexta = ''
+    number_sexta = 0
+    for row in cur:
+        materias_sexta =  f'**{horarios[number_sexta]}**' + ':\n' + f'``{row[1]}``' + '\n'
+        aulas_sexta += materias_sexta
+        number_sexta += 1
+    embedVar = discord.Embed(
+                                title=f"Sua grade de aulas",color=0x06adc4)
+    embedVar.add_field(name='Segunda-Feira', value=f"{aulas_segunda}")
+    embedVar.add_field(name='Terça-Feira', value=f"{aulas_terca}")
+    embedVar.add_field(name='Quarta-Feira', value=f"{aulas_quarta}")
+    embedVar.add_field(name='Quinta-Feira', value=f"{aulas_quinta}")
+    embedVar.add_field(name='Sexta-Feira', value=f"{aulas_sexta}")
+    image_found = 'https://media3.giphy.com/media/NVBR6cLvUjV9C/giphy_s.gif'
+    embedVar.set_thumbnail(url=f"{image_found}")
+    await ctx.send(embed=embedVar)
 @bot.command()
 async def deletar_grade(ctx):
   def check(res):
@@ -271,7 +367,7 @@ async def deletar_grade(ctx):
     conn = sqlite3.connect('users.db')
     cur = conn.cursor()
     try:
-      cur.execute(f'DELETE FROM grades WHERE id= ?', (user_id, ))
+      cur.execute(f'DELETE FROM grades WHERE id = "{user_id}"')
       conn.commit()
       await ctx.send('Pronto.')
     except:
@@ -284,7 +380,7 @@ async def segunda(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   try:
     cur.execute(f'SELECT id, segunda FROM grades WHERE segunda IS NOT NULL and id= "{user_id}"')
   except:
@@ -293,7 +389,7 @@ async def segunda(ctx):
   materias = ''
   number = 0
   for row in cur:
-      materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+      materias =  f'**{horarios[number]}**' + ': ' + f'``{row[1]}``' + '\n'
       aulas += materias
       number += 1
   if len(aulas) == 0:
@@ -307,7 +403,7 @@ async def terca(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   try:
     cur.execute(f'SELECT id, terca FROM grades WHERE terca IS NOT NULL and id= "{user_id}"')
   except:
@@ -317,7 +413,7 @@ async def terca(ctx):
   number = 0
   try:
     for row in cur:
-      materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+      materias =  f'**{horarios[number]}**' + ': ' + f'``{row[1]}``' + '\n'
       aulas += materias
       number += 1
   
@@ -335,7 +431,7 @@ async def quarta(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   try:
     cur.execute(f'SELECT id, quarta FROM grades WHERE quarta IS NOT NULL and id= "{user_id}"')
   except:
@@ -344,7 +440,7 @@ async def quarta(ctx):
   materias = ''
   number = 0
   for row in cur:
-    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    materias =  f'**{horarios[number]}**' + ': ' + f'``{row[1]}``' + '\n'
     aulas += materias
     number += 1
   if len(aulas) == 0:
@@ -358,7 +454,7 @@ async def quinta(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   try:
     cur.execute(f'SELECT id, quinta FROM grades WHERE quinta IS NOT NULL and id= "{user_id}"')
   except:
@@ -367,7 +463,7 @@ async def quinta(ctx):
   materias = ''
   number = 0
   for row in cur:
-    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    materias =  f'**{horarios[number]}**' + ': ' + f'``{row[1]}``' + '\n'
     aulas += materias
     number += 1
   if len(aulas) == 0:
@@ -381,7 +477,7 @@ async def sexta(ctx):
   user_id = str(ctx.author).split('#')[0]
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
-  horarios = ['08:00-8:50', '8:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '18:50-19:35', '19:35-20:20']
+  horarios = ['08:00-8:50', '08:50-9:40', '10:00-10:50', '10:50-11:40', '14:00-14:50', '14:50-15:40', '16:00-16:50', '16:50-17:40', '18:50-19:35', '19:35-20:20']
   try:
     cur.execute(f'SELECT id, sexta FROM grades WHERE sexta IS NOT NULL and id= "{user_id}"')
   except:
@@ -390,7 +486,7 @@ async def sexta(ctx):
   materias = ''
   number = 0
   for row in cur:
-    materias =  f'**{horarios[number]}**' + ': ' + row[1] + '\n'
+    materias =  f'**{horarios[number]}**' + ': ' + f'``{row[1]}``' + '\n'
     aulas += materias
     number += 1
   if len(aulas) == 0:
@@ -720,10 +816,10 @@ async def cinema(ctx):
       rating_users = str(rating_stars).split('<')[3].split('>')[1]
     embedVar = discord.Embed(
                               title=f"{name}", color=0x06adc4)
-    embedVar.add_field(name=nome_nota1, value=f"**{rating_imprensa}**")
-    embedVar.add_field(name=nome_nota2, value=f"**{rating_users}**")
+    embedVar.add_field(name=nome_nota1, value=f"**:star:** **{rating_imprensa}**")
+    embedVar.add_field(name=nome_nota2, value=f"**:star:** **{rating_users}**")
     if str(nome_nota3) != 'Meusamigos':
-      embedVar.add_field(name=nome_nota3, value=f"**{rating_cinema}**")
+      embedVar.add_field(name=nome_nota3, value=f"**:star:** **{rating_cinema}**")
     embedVar.set_thumbnail(url=f"{image_found}")
     await ctx.send(embed=embedVar)
   except:
@@ -731,7 +827,7 @@ async def cinema(ctx):
   
 # PEDRA PAPEL TESOURA
 @bot.command()
-async def pdt(ctx):
+async def ppt(ctx):
     user_id = str(ctx.author).split('#')[0]
     def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
@@ -1252,7 +1348,7 @@ async def previsao(ctx):
 async def matriz(ctx):
         quote = (ctx.author.mention + ' tome aqui o link de Matrizes para Estatística: ' +
                  'https://meet.google.com/ptx-urqy-bhc')
-        await ctx.channel.send(quote, delete_after=200.0)
+        await ctx.channel.send(quote, delete_after=60.0 * 5)
 # DEMOGRAFIA
 @bot.command()
 async def demografia(ctx):
@@ -1487,6 +1583,12 @@ async def imagem(ctx):
 async def tempo(ctx):
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
+  try:
+    url = f'https://www.tempo.com/goiania.htm'
+    result = requests.get(url).text
+    doc = bs(result, 'html.parser')
+  except:
+    await ctx.send('estou quebrado no momento')
   await ctx.send('Você deseja saber o tempo de agora ou a previsão da semana? Responda com **semana** ou **agora**.')
   i = True
   while i:
@@ -1501,11 +1603,6 @@ async def tempo(ctx):
     else:
       await ctx.send('Não entendi. Digite novamente.')
       continue
-
-  # Lê o html da página 
-  url = f'https://www.tempo.com/goiania.htm'
-  result = requests.get(url).text
-  doc = bs(result, 'html.parser')
   try:
       div = doc.find(class_='dos-semanas nuevo-1')
       datas = div.find(class_='datos-dos-semanas')
@@ -1568,14 +1665,14 @@ async def tempo(ctx):
     chuva_porc_imagem_num = int(chuva_porc_imagem)
     embedT = discord.Embed(title='Tempo agora - Goiânia',
                   description=f'Agora está fazendo **{temperatura_atual}** com a sensação térmica de **{sensacao_found}**.\nA temperatura máxima de hoje é de **{temp_max}** e a mínima de **{temp_min}**.\nA chance de chover hoje é de **{chuva_porc}**.', color=0x00b2ff)
-    if chuva_porc_imagem_num < 50 and chuva_porc_imagem_num >= 30:
-      imagem_url = 'https://images.emojiterra.com/google/android-11/512px/1f327.png'
+    if int(temperatura_atual.replace('°','')) > 25:
+      imagem_url = 'https://c.tenor.com/Pd0Kna5m45cAAAAM/skeleton-burning.gif'
       embedT.set_thumbnail(url=imagem_url)
-    elif chuva_porc_imagem_num > 50:
-      imagem_url = 'https://www.nicepng.com/png/full/9-91464_thunder-lightning-clip-art-thunder-and-lightning-clipart.png'
+    elif int(temperatura_atual.replace('°','')) <= 25 and int(temperatura_atual.replace('°','')) >= 20:
+      imagem_url = 'https://c.tenor.com/4Q6zi0KBqTwAAAAM/good-night-bed.gif'
       embedT.set_thumbnail(url=imagem_url)
-    elif chuva_porc_imagem_num < 30:
-      imagem_url = 'https://images.emojiterra.com/openmoji/v12.2/512px/26c5.png'
+    elif int(temperatura_atual.replace('°','')) < 20:
+      imagem_url = 'https://media1.giphy.com/media/3o7TKVESbDAfJJsPcY/giphy.gif?cid=790b761100b8caaed5c95668985f6aa1043543f9bf0cff82&rid=giphy.gif&ct=g'
       embedT.set_thumbnail(url=imagem_url)
     await ctx.reply(embed=embedT)
 
@@ -1627,7 +1724,7 @@ async def tempo(ctx):
 @bot.command()
 async def comandos(ctx):
   embedVar = discord.Embed(
-                          title="!comandos", description=f'``!rank``\n=> Ranking de pontos.\n\n``!mercadolivre``\n=> O bot realiza um webscraping em tempo real no site __Mercado Livre__. Nisto, você poderá pesquisar qualquer produto que esteja disponível e filtrar os resultados pelo preço.\n\n``!previsao``\n=> O bot realiza um web scraping em um site de previsão do tempo. Retorna a temperatura máxima, mínima e seus determinados dias.\n\n``!imagem``\n=> O bot manda uma imagem aleatória buscada por web scraping.\n\n``!cinema``\n=> Dê um nome de algum filme para o bot e ele retornará as notas que o filme recebeu de acordo com o site ``Adoro Cinema``.\n\n``!anime``\n=> Web Scraping no site MyAnimeList, o bot retorna a nota que o anime/manga recebeu.\n\n``!doguinho``\n=> doguinho fofo lindo\n\n``!significado``\n=> Quer saber o que significa Dacriocistossiringotomia? O bot vai te falar!\n\n``!ping``\n=> Teste para saber se o bot ainda está ativo no servidor do replit.\n\n``!rpg``\n=>role play\n\n``!loteria``\n=> O bot fará uma seleção de 6 números aleatórios. Cabe ao jogador apostar 6 números distintos para tentar a sorte ||de ganhar nada||.\n\n``!roleta``\n=> Roleta russa. Um tambor de 6 entradas e 1 bala girará. O bot irá rodar os jogadores aleatoriamente e disparará o gatilho. Ganha quem ficar vivo até o final. O jogador poderá escolher jogar contra outros 5 jogadores ou contra o bot.\n\n``!mm``\n=> Jogo do mais, igual ou menos. O bot escolherá um número aleatório e dará uma dica. Tal dica será um número supostamente perto do __número secreto__. Cabe ao jogador escolher as seguintes opções: o número secreto ser maior que a dica, o número secreto ser menor que a dica ou o número secreto ser igual a dica.\n\n``!pdt``\n=> Pedra, papel e tesoura.\n\n``!dados``\n=> Jogue dois dados e torça para pelo menos um deles cair com o número 1.\n\n``!cores``\n=> O bot colocará uma palavra aleatória na frente de uma cor aleatória. Após determinado tempo, o bot ocultará as palavras e as cores e, então, perguntar ao jogador qual cor se designava determinada palavra.\n\n``!bd, !al, !prob, !calc2``\n=> O bot mandará o link do meet para a aula determinada pelo usuário.\n\n``!dirso``\n=> Simplesmente dirso.\n\n``!op``\n=> O bot escolherá uma operação matemática aleatória entre números aleatórios. Acerte e não seja zoado pelo bot.\n\n``!forca``\n=> Jogo da forca.\n\n``!niilismo``\n=> cringe.', color=0xc50b0b)
+                          title="!comandos", description=f'``!rank``\n=> Ranking de pontos.\n\n``!mercadolivre``\n=> O bot realiza um webscraping em tempo real no site __Mercado Livre__. Nisto, você poderá pesquisar qualquer produto que esteja disponível e filtrar os resultados pelo preço.\n\n``!previsao``\n=> O bot realiza um web scraping em um site de previsão do tempo. Retorna a temperatura máxima, mínima e seus determinados dias.\n\n``!imagem``\n=> O bot manda uma imagem aleatória buscada por web scraping.\n\n``!cinema``\n=> Dê um nome de algum filme para o bot e ele retornará as notas que o filme recebeu de acordo com o site ``Adoro Cinema``.\n\n``!anime``\n=> Web Scraping no site MyAnimeList, o bot retorna a nota que o anime/manga recebeu.\n\n``!doguinho``\n=> doguinho fofo lindo\n\n``!significado``\n=> Quer saber o que significa Dacriocistossiringotomia? O bot vai te falar!\n\n``!ping``\n=> Teste para saber se o bot ainda está ativo no servidor do replit.\n\n``!criar_grade``\n=> Crie sua grade de horaríos. O bot a salvasará em seu banco de dados.\n\n``!deletar_grade``=> O bot irá excluir a sua grade de horários do banco de dados.\n\n``!grade_geral``=> Sua grade com todos os dias e horários\n\n``!(dia)``\n=> O bot irá mostrar sua grade do dia.\n\n``!niilismo``\n=> cringe.', color=0xc50b0b)
   await ctx.send(embed=embedVar)
   
 # MERCADO LIVRE SCRAPING
@@ -1637,15 +1734,16 @@ async def mercadolivre(ctx):
   def check(res):
         return ctx.author == res.author and res.channel == ctx.channel
   # Parâmetros para a pesquisa
-  await ctx.reply('Qual produto você quer pesquisar?')
+  await ctx.reply('Qual o nome do produto que você quer pesquisar?\n**Dica:**\nCaso seja um produto com um nome composto, tente escrever a primeira palavra da maneira mais correta possível.')
   tag_resp = await bot.wait_for('message', check=check)
   tag = tag_resp.content
-  await ctx.send('Deseja filtar os produtos pelo preço? Responda com sim ou não.\nObs: o bot recomenda que filtre os produtos pelo preço para não floodar o canal em que foi chamado.')
+  await ctx.send('Deseja filtar os produtos pelo preço? Responda com sim ou não.')
   filtro_res = await bot.wait_for('message',check=check)
   if filtro_res.content == 'sim' or filtro_res.content == 'Sim' or filtro_res.content == 'S' or filtro_res.content == 's':
     filtro = True
   else:
     filtro = False
+    
   if ' ' in tag:
     tag_search = tag.replace(' ', '-')
   else:
@@ -1661,6 +1759,12 @@ async def mercadolivre(ctx):
     min_pr = await bot.wait_for('message', check=check)
     min_price = min_pr.content
     await min_pr.add_reaction('👍')
+    await ctx.send('Você deseja filtrar os produtos pelo frete grátis? Responda com __sim__ ou __não__.')
+  filtro_frete_res = await bot.wait_for('message', check=check)
+  if filtro_frete_res.content.lower() == 'sim' or filtro_frete_res.content.lower() == 's':
+    filtro_frete = True
+  else:
+    filtro_frete = False
   # Ler o HTML da página
   result = requests.get(url).text
   doc = bs(result, 'html.parser')
@@ -1685,7 +1789,7 @@ async def mercadolivre(ctx):
         except:
             await ctx.send('.')
         try:
-          frete_search = next_parent.find(class_='ui-search-item__group ui-search-item__group--shipping')
+          frete_search = next_parent.find(class_='ui-search-item__group ui-search-item__group--shipping') 
           frete_found = str(frete_search).split('>')[3].split('<')[0]
           if frete_found != 'Frete grátis':
             frete = 'Pago'
@@ -1724,7 +1828,20 @@ async def mercadolivre(ctx):
       sorted_items = sorted(items_found.items(), key=lambda x: x[1]['price'])
       num_items = 0
       for item in sorted_items:
-        if filtro == True:
+        if filtro == True and filtro_frete == True:
+          try:
+              if int(item[1]['price'].replace('.', '')) <= int(max_price) and int(item[1]['price'].replace('.', '')) >= int(min_price) and str(item[1]['frete']) != 'Pago':
+                num_items += 1
+                embedVar = discord.Embed(
+                            title=f"{item[0]}", color=0x121274)
+                embedVar.add_field(name='Valor do item', value=f"**R${item[1]['price']}**")
+                embedVar.add_field(name='Link do item', value=f" {item[1]['link']}")
+                embedVar.add_field(name='Frete', value=f" **{item[1]['frete']}**")
+                embedVar.set_thumbnail(url=f"{item[1]['image']}")
+                await ctx.channel.send(embed=embedVar)
+          except:
+            await ctx.send('quebrei')
+        elif filtro == True and filtro_frete == False:
           try:
               if int(item[1]['price'].replace('.', '')) <= int(max_price) and int(item[1]['price'].replace('.', '')) >= int(min_price):
                 num_items += 1
@@ -1749,8 +1866,10 @@ async def mercadolivre(ctx):
       if filtro == True:
         if num_items >= 1:
               await ctx.send(f'Estes foram os ``{num_items}`` resultados da minha busca filtrada!')
-        else:
-              await ctx.send(f'Não consegui encontrar ``{tag}`` filtrado em ``R${max_price}``. Aumente o valor do filtro ou escreva o nome do produto de outra forma.')
+        elif num_items <= 0 and filtro_frete == True:
+              await ctx.send(f'Não consegui encontrar ``{tag}`` filtrado em ``R${max_price}`` e ``R${min_price}`` com o frete grátis. Mude o valor do filtro, escreva o nome do produto de outra forma ou não filtre pelo frete grátis.')
+        elif num_items <= 0 and filtro_frete == False:
+              await ctx.send(f'Não consegui encontrar ``{tag}`` filtrado em ``R${max_price}`` e ``R${min_price}``. Mude o valor do filtro ou escreva o nome do produto de outra forma.')
       else:
         if len(items_found) >= 1:
               await ctx.send(f'Estes foram os ``{len(items_found)}`` resultados da minha busca!')
@@ -1840,6 +1959,7 @@ async def on_message(message):
                 await message.channel.send('te perguntoukkkkkkkkkkkkkkkkkkk')
             else:
                 return
+
     if message.content.startswith('bot lindo'):
         await message.reply('<:sapo_amor:846410960666361890>')
     if message.content.startswith('tchau bot'):
@@ -1850,18 +1970,7 @@ async def on_message(message):
         if word in message.content:
             resposta = quotes_musical
             await message.reply(resposta, mention_author=False)
-            await message.channel.send(file=discord.File("D:\Área de Trabalho\pyhonn\pepe_singing.jpg"))
-    quotes = 'cringe'
-    trigger = ['niilismo', 'Nilismo', 'Niilismo']
-    for word in trigger:
-        if message.content == '!niilismo':
-            break
-        else:
-            if word in message.content:
-                resposta = quotes
-                await message.reply(resposta, mention_author=False)
-                break
-keep_alive()
-bot.run(cod)
+            
 
+bot.run(cod)
 
