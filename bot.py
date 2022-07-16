@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 from discord_components import *
 from asyncio import TimeoutError
+from keep_alive import keep_alive
 from discord.utils import get
 import io
 import aiohttp
@@ -16,8 +17,7 @@ import time
 import sqlite3
 from discord.ext import commands, tasks
 import asyncio
-import datetime
-
+from datetime import datetime, time, timedelta
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
 
@@ -28,8 +28,10 @@ nilismo = ["A filosofia é o exílio voluntário entre montanhas geladas.", "Nó
 async def on_ready():
     #db_connect = sqlite3.connect('users.db')
     #rat = db_connect.cursor()
+    #rat.execute('DROP TABLE IF EXISTS wordlist')
+    #rat.execute('CREATE TABLE IF NOT EXISTS wordlist(words TEXT, points INT DEFAULT 0)')
     #rat.execute('DROP TABLE IF EXISTS userid')
-    #rat.execute('CREATE TABLE IF NOT EXISTS userid(id TEXT, pontos INT DEFAULT 0, money INT DEFAULT 100)')
+    #rat.execute('CREATE TABLE IF NOT EXISTS userid(id TEXT, points INT DEFAULT 0, money INT DEFAULT 100)')
     #rat.execute('CREATE TABLE IF NOT EXISTS grades(id TEXT, segunda TEXT, terca TEXT, quarta TEXT, quinta TEXT, sexta TEXT)')
     #db_connect.commit()
     DiscordComponents(bot)
@@ -49,7 +51,11 @@ async def on_command_error(ctx, error):
 async def datahora(ctx):
   hora_data = datetime.datetime.now()
   data_hora = str(hora_data).split('.')[0].split(' ')[1]
-  await ctx.reply(data_hora)
+  hora = int(data_hora.split(':')[0])-3
+  minutos = str(str(hora_data).split('.')[0].split(' ')[1]).split(":")[1]
+  segundos = str(str(hora_data).split('.')[0].split(' ')[1]).split(":")[2]
+  hora_data = str(f"{hora}:{minutos}:{segundos}")
+  await ctx.reply(hora_data)
 """----------Consertar essa porra depois
 @bot.command()
 async def anime(ctx):
@@ -499,7 +505,7 @@ async def sexta(ctx):
   
   
 @bot.command()
-async def palavras(ctx):
+async def palavrass(ctx):
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
   cur.execute('SELECT palavras FROM words')
@@ -574,7 +580,30 @@ async def remover(ctx):
   else:
     await ctx.send(f'Não foi possível retirar a palavra {palavra} pois ela não está inserida no banco.')
 @bot.command()
-async def ricos(ctx):
+async def palavras(ctx):
+  # Conecta ao banco de dados
+  conn = sqlite3.connect('users.db')
+  cur = conn.cursor()
+  # Seleciona as linhas id e money da tabela userid ordenada pelo dinheiro
+  cur.execute('SELECT words FROM wordlist ORDER BY points DESC LIMIT 5')
+  usuarios = ''
+  num = 1
+  # Retorna cada linha do banco selecionadas anteriormente
+  for row in cur:
+    if num == 1:
+      usuarios = usuarios + f":first_place: **{row[0]}**" + "\n"
+    if num == 2:
+      usuarios = usuarios + f":second_place: **{row[0]}**" + "\n"
+    if num == 3:
+      usuarios = usuarios + f":third_place: **{row[0]}**" + "\n"
+    elif num != 1 and num != 2 and num != 3:
+      usuarios = usuarios + f":small_blue_diamond: **{row[0]}**" + "\n"
+    num += 1
+  embedG = discord.Embed(
+        title="Palavras mais frequentes", description=f'{usuarios}', color=0x00ff00)
+  await ctx.send(embed=embedG)
+@bot.command()
+async def faladores(ctx):
   # Conecta ao banco de dados
   conn = sqlite3.connect('users.db')
   cur = conn.cursor()
@@ -594,8 +623,9 @@ async def ricos(ctx):
       usuarios = usuarios + f":small_blue_diamond: **{row[0]}**" + ": " + f"``{row[1]}``" + "\n"
     num += 1
   embedG = discord.Embed(
-        title="Ricos do servidor", description=f'{usuarios}', color=0x00ff00)
+        title="Os boca aberta", description=f'{usuarios}', color=0x00ff00)
   await ctx.send(embed=embedG)
+
 # GATINHO
 @bot.command()
 async def gatinho(ctx):
@@ -630,56 +660,7 @@ async def rank(ctx):
         title="Ranking de pontos", description=f'{usuarios}', color=0x00ff00)
   await ctx.send(embed=embedG)
 
-@bot.command()
-async def apostar(ctx):
-  user_id = str(ctx.author).split('#')[0]
-  conn = sqlite3.connect('users.db')
-  cur = conn.cursor()
-  cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
-  for row in cur:
-    money = int(row[1])
-  if money > 0:
-    await ctx.reply('Quanto você quer apostar? ')
-  else:
-    await ctx.reply('Você não tem nada pra apostar.')
-  def check(res):
-        return ctx.author == res.author and res.channel == ctx.channel
-  response = await bot.wait_for('message', check=check)
-  apostado = int(response.content)
-  aposta = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
-  sorte = random.choice(aposta)
-  user_id = str(ctx.author).split('#')[0]
- 
-  money_won =  int(2 * apostado)
-  money_won2 = int(apostado + 250)
-  for row in cur:
-    money = int(row[1])
-  if money < apostado:
-    await ctx.reply('Você não tem tudo isso.')
-  elif apostado == 0:
-    await ctx.reply('Sério?')
-  else:
-    if sorte == 'a':
-        cur.execute(f'UPDATE userid SET money = money + {money_won} WHERE id= "{user_id}"')
-        conn.commit()
-        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
-        for row in cur:
-          money = int(row[1])
-        await ctx.reply(f'Você ganhou o ``dobro`` :money_mouth:. Agora você tem ``{money}``!')
-    elif sorte == 'b' or sorte == 'c':
-        cur.execute(f'UPDATE userid SET money = money + {money_won2} WHERE id= "{user_id}"')
-        conn.commit()
-        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
-        for row in cur:
-          money = int(row[1])
-        await ctx.reply(f'Você ganhou, ``{user_id}``! Agora você tem ``{money}``.')
-    else:
-        cur.execute(f'UPDATE userid SET money = money - {apostado} WHERE id= "{user_id}"')
-        conn.commit()
-        cur.execute(f'SELECT id, money FROM userid WHERE id="{user_id}"')
-        for row in cur:
-          money = int(row[1])
-        await ctx.reply(f'Você perdeu, ``{user_id}``! Agora você tem ``{money}``.')
+
 # DIRSON
 @bot.command()
 async def dirso(ctx):
@@ -1343,73 +1324,11 @@ async def niilismo(ctx):
 @bot.command()
 async def previsao(ctx):
         await ctx.send('**!previsao** agora é **!tempo**')
-# MATRIZES PARA ESTATISTICA
-@bot.command()
-async def matriz(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Matrizes para Estatística: ' +
-                 'https://meet.google.com/ptx-urqy-bhc')
-        await ctx.channel.send(quote, delete_after=60.0 * 5)
-# DEMOGRAFIA
-@bot.command()
-async def demografia(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Demografia: ' +
-                 'https://meet.google.com/gvv-cpby-vie')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# PROB 2
-@bot.command()
-async def prob2(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Probabilidade 2: ' +
-                 'http://meet.google.com/mpn-oarf-bhz')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# METODOS NAO PARAMETRICOS
-@bot.command()
-async def metodos(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Métodos não paramétricos: ' +
-                 'https://meet.google.com/nop-wfbe-rwd')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# INFERENCIA
-@bot.command()
-async def inferencia(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Inferência I: ' +
-                 'https://meet.google.com/uvg-mnfj-fjq')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# CALCULO NUMERICO
-@bot.command()
-async def calcnum(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Calculo Numerico: ' +
-                 'https://meet.google.com/noy-vwwh-oha')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# TOPICOS DE ESTATISTICA
-@bot.command()
-async def topicos(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Topicos em Estatistica: ' +
-                 'https://meet.google.com/mwm-rxcf-uma')
-        await ctx.channel.send(quote, delete_after=200.0)
-
-# CONTROLE ESTATISTICO DE QUALIDADE
-@bot.command()
-async def controle(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Controle Estatístico de Qualidade: ' +
-                 'https://meet.google.com/hzy-gkir-wbq')
-        await ctx.channel.send(quote, delete_after=200.0)
-        
-
-# CALC INTEGRAL
-@bot.command()
-async def calc(ctx):
-        quote = (ctx.author.mention + ' tome aqui o link de Calculo Integral: ' +
-                 'https://meet.google.com/non-jaue-nya')
-        await ctx.channel.send(quote, delete_after=200.0)
 
 @bot.command()
 async def aulas(ctx):
   embedA = discord.Embed(
-        title="Links das aulas", description='**!controle** - Controle Estatístico de Qualidade\n**!topicos** - Tópicos em Estatística\n**!calcnum** - Cálculo Numérico\n**!calc** - Cálculo Integral\n**!inferencia** - Inferência I\n**!metodo** - Métodos não Paramétricos\n**!prob2** - Probabilidade II\n**!matriz** - Matrizes para Estatística\n**!demografia** - Demografia', color=0x00b2ff)
+        title="Links das aulas", description='#VoltaAulaOnline', color=0x00b2ff)
   imagem_url = 'https://cfoc.org/wp-content/uploads/2014/11/click-or-not-suspicious-link-1140x500@2x.jpg'
   embedA.set_thumbnail(url=imagem_url)
   await ctx.send(embed=embedA)
@@ -1567,17 +1486,6 @@ async def roleta(ctx):
                 await ctx.reply('Nenhum jogador restou.')
                 break
        
-# IMAGEM ALEATÓRIA
-@bot.command()
-async def imagem(ctx):
-  url = f'https://www.generatormix.com/random-image-generator'
-  result = requests.get(url).text
-  doc = bs(result, 'html.parser')
-  get_image = doc.find(class_='col-12 tile-block group')
-  src_image = get_image.find(class_='thumbnail-col-1')
-  get_src = str(src_image).split('src=')[1].replace('"','')
-  await ctx.send(get_src)
-  
 # PREVISÃO DO TEMPO
 @bot.command()
 async def tempo(ctx):
@@ -1885,6 +1793,7 @@ async def mercadolivre(ctx):
 async def ping(ctx):
   await ctx.send('https://gifimage.net/wp-content/uploads/2018/11/small-might-gif.gif')
 
+
 # MEMBRO NOVO
 
 @bot.event
@@ -1897,12 +1806,106 @@ async def on_member_join(member):
             data = io.BytesIO(await resp.read())
     await channel.send(member.mention, file=discord.File(data, 'danilao.png'))
 
+
+
+WHEN = time(11, 0, 0) 
+channel_id = 781246896056434712 
+async def called_once_a_day(): 
+    await bot.wait_until_ready() 
+    channel = bot.get_channel(channel_id)
+    url = f'https://www.tempo.com/goiania.htm'
+    result = requests.get(url).text
+    doc = bs(result, 'html.parser')
+    div_temp = doc.find(class_='datos-estado-actual')
+    real_div = div_temp.find(class_='principal')
+    try:
+      div = doc.find(class_='dos-semanas nuevo-1')
+      datas = div.find(class_='datos-dos-semanas')
+    except:
+      try:
+          div = doc.find(class_='dos-semanas nuevo-2')
+          datas = div.find(class_='datos-dos-semanas')
+      except:
+        try:
+            div = doc.find(class_='dos-semanas nuevo-3')
+            datas = div.find(class_='datos-dos-semanas')
+        except:
+          try:
+              div = doc.find(class_='dos-semanas nuevo-4')
+              datas = div.find(class_='datos-dos-semanas')
+          except:
+            try:
+                div = doc.find(class_='dos-semanas nuevo-5')
+                datas = div.find(class_='datos-dos-semanas')
+            except:
+              try:
+                  div = doc.find(class_='dos-semanas nuevo-6')
+                  datas = div.find(class_='datos-dos-semanas')
+              except:
+                try:
+                    div = doc.find(class_='dos-semanas nuevo-7')
+                    datas = div.find(class_='datos-dos-semanas')
+                except:
+                  try:
+                      div = doc.find(class_='dos-semanas noche-nuevo')
+                      datas = div.find(class_='datos-dos-semanas')
+                  except:
+                      await channel.send('disgraçaaaaaaaaaaaa')
+    dia = datas.find(class_=f'dia d1 activo')
+    item_temp = dia.find(class_='temperatura')
+    temp_max_found = item_temp.find(class_='maxima changeUnitT')
+    temp_min_found = item_temp.find(class_='minima changeUnitT')
+    temp_max = str(temp_max_found).split('>')[1].split('<')[0]
+    temp_min = str(temp_min_found).split('>')[1].split('<')[0]
+    # Procura pela temperatura atual
+    temp_search = real_div.find(class_='temperatura')
+    temp_found = temp_search.find(class_='dato-temperatura changeUnitT')
+    temperatura_atual = str(temp_found).split('>')[1].split('<')[0]
+    # Procura pela probabilidade de chuva, caso tenha
+    try:
+        chuva = dia.find(class_='prediccion')
+        chuva_get = chuva.find(class_='probabilidad-lluvia')
+        chuva_porc = str(chuva_get).split('>')[1].split('<')[0].replace(' ', '')
+    except:
+        chuva_porc = '0%'
+    embedT = discord.Embed(title='**Bom dia!!!**',
+                  description=f'Hoje o dia amanhece com **{temperatura_atual}**.\nA temperatura máxima de hoje é de **{temp_max}** e a mínima de **{temp_min}**.\nA chance de chover hoje é de **{chuva_porc}**.\n\n**O Bot do Link lhe deseja um ótimo dia <:sapo_amor:846410960666361890>!**', color=0x00b2ff)
+    if int(temperatura_atual.replace('°','')) > 25:
+      imagem_url = 'https://c.tenor.com/Pd0Kna5m45cAAAAM/skeleton-burning.gif'
+      embedT.set_thumbnail(url=imagem_url)
+    elif int(temperatura_atual.replace('°','')) <= 25 and int(temperatura_atual.replace('°','')) >= 20:
+      imagem_url = 'https://c.tenor.com/4Q6zi0KBqTwAAAAM/good-night-bed.gif'
+      embedT.set_thumbnail(url=imagem_url)
+    elif int(temperatura_atual.replace('°','')) < 20:
+      imagem_url = 'https://media1.giphy.com/media/3o7TKVESbDAfJJsPcY/giphy.gif?cid=790b761100b8caaed5c95668985f6aa1043543f9bf0cff82&rid=giphy.gif&ct=g'
+      embedT.set_thumbnail(url=imagem_url)
+    await channel.send(embed=embedT)
+async def background_task():
+    now = datetime.utcnow()
+    print(now.time())
+    print(WHEN)
+    if now.time() > WHEN:  
+        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        seconds = (tomorrow - now).total_seconds()  
+        await asyncio.sleep(seconds)   
+    while True:
+        now = datetime.utcnow() 
+        target_time = datetime.combine(now.date(), WHEN)  
+        seconds_until_target = (target_time - now).total_seconds()
+        await asyncio.sleep(seconds_until_target)
+        await called_once_a_day()  
+        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        seconds = (tomorrow - now).total_seconds() 
+        await asyncio.sleep(seconds)   
+
+letter_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 @bot.event
 async def on_message(message):
     def check(res):
         return message.author == res.author and res.channel == message.channel
     await bot.process_commands(message)
     msg = message.content
+    
     if message.author == bot.user:
         return
     # Nome ou id do usuário 
@@ -1926,7 +1929,24 @@ async def on_message(message):
         print(f'{user_id} foi adicionado ao banco')
         # Atualiza o banco de dados
         conn.commit()
-    
+    word_list = str(msg).split(' ')
+    for word in word_list:
+      word = word.lower()
+      conn = sqlite3.connect('users.db')
+      cur = conn.cursor()
+      cur.execute(f'UPDATE userid SET money = money + 1 WHERE id= "{user_id}"')
+      if len(word) > 1:
+        cur.execute(f'SELECT words FROM wordlist')
+        words = ''
+        for row in cur:
+          words = words + row[0] + ','
+        if word in words.lower():
+          cur.execute(f'UPDATE wordlist SET points = points + 1 WHERE words="{word}"')
+        elif word not in words.lower() and word[0].lower() in letter_list and word not in ['b.']:
+          cur.execute(f'INSERT INTO wordlist (words) VALUES (?)', (word, ))
+          print(f'{word} foi adicionado ao banco')
+
+      conn.commit()
     if any(word in msg for word in sad_words):
         async with aiohttp.ClientSession() as session:
           async with session.get('https://c.tenor.com/iq2DpeeqfugAAAAC/ganbatte-butterfly-estate.gif') as resp:
@@ -1949,7 +1969,7 @@ async def on_message(message):
       else:
         await message.channel.send(f'{people} {extra2}')
     if message.content.startswith('bot burro'):
-        palavras = ['teu pai', 'quem?','q-que eu fiz de errado?', 'd-desculpa :pensive:','quem?','quem?','quem?','quem?']
+        palavras = ['teu pai', 'quem?','q-que eu fiz de errado?', 'd-desculpa :pensive:']
         palavra = random.choice(palavras)
         await message.reply(f'{palavra}')
         if palavra == 'quem?':
@@ -1959,18 +1979,18 @@ async def on_message(message):
                 await message.channel.send('te perguntoukkkkkkkkkkkkkkkkkkk')
             else:
                 return
-
     if message.content.startswith('bot lindo'):
         await message.reply('<:sapo_amor:846410960666361890>')
     if message.content.startswith('tchau bot'):
         await message.channel.send('flws :wave:')
-    quotes_musical = 'TAKE ME HOMEEEEEEEEEEEE, ITS THE ONLY PLACE I CAN REST IN PIECEEEEEE'
-    trigger_musical = ['take']
+    quotes_musical = 'https://i.kym-cdn.com/photos/images/facebook/001/511/969/b11.jpg'
+    trigger_musical = ['TAKE ME HOME']
     for word in trigger_musical:
         if word in message.content:
             resposta = quotes_musical
-            await message.reply(resposta, mention_author=False)
+            await message.reply(resposta, mention_author=True)
             
-
+keep_alive()
+bot.loop.create_task(background_task())
 bot.run(cod)
 
