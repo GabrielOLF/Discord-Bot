@@ -18,6 +18,9 @@ import sqlite3
 from discord.ext import commands, tasks
 import asyncio
 from datetime import datetime, time, timedelta
+from PIL import Image
+from io import BytesIO
+
 
 bot = ComponentsBot(command_prefix='!', intents=discord.Intents.all())
 
@@ -1786,6 +1789,22 @@ async def mercadolivre(ctx):
   else:
     await ctx.send(f'Infelizmente não consegui encontrar ``{tag}``. Por favor, me chame novamente e tente escrever o nome do produto de outra forma.')
 
+# MANIPULACAO DE IMAGEM
+
+@bot.command()
+async def sucker(ctx, user: discord.Member = None):
+  if user == None:
+    user = ctx.author
+  response = requests.get('https://imageproxy.ifunny.co/crop:x-20,resize:640x,quality:90x75/images/7f0dd8416976af6e76007264d35a881a923243f6146da3e746e6bd73c2a44108_1.jpg')
+  image = Image.open(BytesIO(response.content))
+  asset = user.avatar_url_as(size = 128)
+  data = BytesIO(await asset.read())
+  pfp = Image.open(data)
+  pfp = pfp.resize((247, 355))
+  image.paste(pfp, (203, 273))
+  image.save('pfp.jpg')
+  await ctx.send(file = discord.File('pfp.jpg'))
+  
 
 # PING
 
@@ -1942,7 +1961,7 @@ async def on_message(message):
           words = words + row[0] + ','
         if word in words.lower():
           cur.execute(f'UPDATE wordlist SET points = points + 1 WHERE words="{word}"')
-        elif word not in words.lower() and word[0].lower() in letter_list and word not in ['b.']:
+        elif word not in words.lower() and word[0].lower() in letter_list and '.' not in word:
           cur.execute(f'INSERT INTO wordlist (words) VALUES (?)', (word, ))
           print(f'{word} foi adicionado ao banco')
 
